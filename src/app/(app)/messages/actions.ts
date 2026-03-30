@@ -51,16 +51,45 @@ export async function startConversationAction(formData: FormData) {
     redirect("/messages?error=" + encodeURIComponent(msg));
   }
 
+  const convId = String(conversationId);
+  const { data: participantRows, error: participantsError } = await supabase
+    .from("conversation_participants")
+    .select("user_id")
+    .eq("conversation_id", convId);
+
+  if (participantsError) {
+    redirect(
+      "/messages?error=" +
+        encodeURIComponent(
+          "Could not verify conversation participants. Please try again.",
+        ),
+    );
+  }
+
+  const participantIds = new Set(
+    (participantRows ?? []).map((r) => r.user_id as string),
+  );
+  const hasBoth =
+    participantIds.has(userId) && participantIds.has(recipientId);
+  if (!hasBoth || participantIds.size < 2) {
+    redirect(
+      "/messages?error=" +
+        encodeURIComponent(
+          "Conversation was created but you were not added as a participant. Re-run the messaging SQL migration (get_or_create_direct_conversation) in Supabase, or contact support.",
+        ),
+    );
+  }
+
   await supabase.from("audit_logs").insert({
     organization_id: organizationId,
     user_id: userId,
     action: "conversation.start",
     entity_type: "conversation",
-    entity_id: conversationId,
+    entity_id: convId,
   });
 
   revalidatePath("/messages");
-  redirect(`/messages/${conversationId}`);
+  redirect(`/messages/${convId}`);
 }
 
 export async function sendMessageAction(

@@ -24,7 +24,14 @@ export default async function ConversationPage({
     .eq("conversation_id", id);
 
   const allowed = (participants ?? []).some((p) => p.user_id === userId);
-  if (!allowed) redirect("/messages");
+  if (!allowed) {
+    redirect(
+      "/messages?error=" +
+        encodeURIComponent(
+          "You don't have access to this conversation, or it could not be loaded.",
+        ),
+    );
+  }
 
   const otherParticipant = (participants ?? []).find((p) => p.user_id !== userId);
   const raw = otherParticipant?.profiles as unknown as
