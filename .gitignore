@@ -22,3 +22,6 @@ yarn-error.log*
 
 # Cursor / IDE (optional local)
 .cursor/
+
+# Agent debug sessions (local only)
+debug-*.log
