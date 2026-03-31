@@ -34,3 +34,7 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+### This repo is a monorepo (`grupply/` is the app)
+
+On Vercel open your project → **Settings** → **Build and Deployment** (left sidebar). Under **Root Directory**, click **Edit**, enter **`grupply`**, then **Save**. Leave **Output Directory** empty unless you customized `distDir`. Clear any **Build Command** / **Install Command** overrides here unless you added them on purpose (defaults should run `npm install` / `next build` inside `grupply`).
