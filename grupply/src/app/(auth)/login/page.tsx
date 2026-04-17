@@ -5,7 +5,7 @@ import { loginAction } from "./actions";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string }>;
+  searchParams?: Promise<{ error?: string; verified?: string; reset?: string }>;
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   return (
@@ -17,31 +17,49 @@ export default async function LoginPage({
         </p>
       </div>
 
+      {resolvedSearchParams?.verified === "1" ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
+          Your email is verified. Log in to continue.
+        </div>
+      ) : null}
+
+      {resolvedSearchParams?.reset === "success" ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
+          Your password has been updated. Log in with your new password.
+        </div>
+      ) : null}
+
       {resolvedSearchParams?.error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
           {resolvedSearchParams.error}
         </div>
       ) : null}
 
-      <form action={loginAction} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1.5 text-sm">
+      <form
+        action={loginAction}
+        className="flex flex-col gap-4"
+        suppressHydrationWarning
+      >
+        <label className="flex flex-col gap-1.5 text-sm" suppressHydrationWarning>
           <span className="text-zinc-700 dark:text-zinc-300">Email</span>
           <input
             name="email"
             type="email"
             required
             autoComplete="email"
+            suppressHydrationWarning
             className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none ring-0 transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
           />
         </label>
 
-        <label className="flex flex-col gap-1.5 text-sm">
+        <label className="flex flex-col gap-1.5 text-sm" suppressHydrationWarning>
           <span className="text-zinc-700 dark:text-zinc-300">Password</span>
           <input
             name="password"
             type="password"
             required
             autoComplete="current-password"
+            suppressHydrationWarning
             className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none ring-0 transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
           />
         </label>

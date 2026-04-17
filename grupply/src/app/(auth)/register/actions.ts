@@ -2,7 +2,16 @@
 
 import { redirect } from "next/navigation";
 
+import { getAppOrigin } from "@/lib/app-url";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+function registerErrorPath(message: string, flow?: string) {
+  const p = new URLSearchParams();
+  p.set("error", message);
+  if (flow === "new") p.set("flow", "new");
+  return `/register?${p.toString()}`;
+}
 
 export async function registerAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
@@ -12,6 +21,7 @@ export async function registerAction(formData: FormData) {
   const organization_name = String(formData.get("organization_name") ?? "").trim();
   const join_code = String(formData.get("join_code") ?? "").trim();
   const biography = String(formData.get("biography") ?? "").trim();
+  const registerFlow = String(formData.get("_flow") ?? "").trim();
 
   const hobbiesRaw = String(formData.get("hobbies") ?? "").trim();
   const hobbyNames = hobbiesRaw
@@ -22,78 +32,127 @@ export async function registerAction(formData: FormData) {
 
   if (join_code && organization_name) {
     redirect(
-      `/register?error=${encodeURIComponent(
-        "Use either a company join code or a new organization name — not both.",
-      )}`,
+      registerErrorPath(
+        "Use either an invite code or a new organization name — not both.",
+        registerFlow === "new" ? "new" : undefined,
+      ),
     );
   }
   if (!join_code && !organization_name) {
     redirect(
-      `/register?error=${encodeURIComponent(
-        "Enter a join code from your company admin, or a new organization name to create one.",
-      )}`,
+      registerErrorPath(
+        registerFlow === "new"
+          ? "Enter an organization name to create your company space."
+          : "Enter your invite code from your company admin, or choose “Create a new company instead”.",
+        registerFlow === "new" ? "new" : undefined,
+      ),
     );
   }
+
+  const appOrigin = await getAppOrigin();
+  const verifyRedirectUrl = new URL("/auth/callback", appOrigin);
+  verifyRedirectUrl.searchParams.set("next", "/login?verified=1");
 
   const supabase = await createSupabaseServerClient();
 
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      emailRedirectTo: verifyRedirectUrl.toString(),
+    },
   });
 
   if (signUpError) {
-    redirect(`/register?error=${encodeURIComponent(signUpError.message)}`);
-  }
-
-  // If email confirmation is required, there's no session yet; ask user to verify email.
-  if (!signUpData.session) {
-    redirect("/verify");
+    let message = signUpError.message;
+    const lower = message.toLowerCase();
+    if (lower.includes("email rate limit") || lower.includes("over_email_send_rate_limit")) {
+      message =
+        "Email rate limit exceeded: Supabase only allows a limited number of auth emails per hour. Wait and try again, or for local testing turn off “Confirm email” under Supabase → Authentication → Providers → Email.";
+    }
+    redirect(registerErrorPath(message, registerFlow === "new" ? "new" : undefined));
   }
 
   const userId = signUpData.user?.id;
-  if (!userId) redirect(`/register?error=${encodeURIComponent("Missing user id.")}`);
+  if (!userId) {
+    redirect(registerErrorPath("Missing user id.", registerFlow === "new" ? "new" : undefined));
+  }
+
+  const hasSession = Boolean(signUpData.session);
+  const admin = createSupabaseAdminClient();
+  if (!admin) {
+    redirect(
+      registerErrorPath(
+        "Missing SUPABASE_SERVICE_ROLE_KEY in grupply/.env.local. Signup uses the service role to create your organization and profile reliably (Supabase → Project Settings → API → service_role). Restart the dev server after adding it.",
+        registerFlow === "new" ? "new" : undefined,
+      ),
+    );
+  }
+
+  const db = admin;
 
   let organization_id: string;
 
   if (join_code) {
-    const { data: joinedOrgId, error: joinError } = await supabase.rpc(
-      "join_organization_by_code",
-      { p_code: join_code },
-    );
-    if (joinError) {
-      const friendly =
-        joinError.message?.toLowerCase().includes("invalid_join_code") ||
-        joinError.message?.toLowerCase().includes("not_authenticated")
-          ? "Invalid or unknown join code. Check with your admin, or register with a new organization name instead."
-          : joinError.message;
-      redirect(`/register?error=${encodeURIComponent(friendly)}`);
+    const { data: resolvedOrgId, error: resolveErr } = await db.rpc("resolve_org_id_by_join_code", {
+      p_code: join_code,
+    });
+    if (resolveErr) {
+      let msg = resolveErr.message;
+      const code = resolveErr.code ?? "";
+      if (
+        code === "PGRST202" ||
+        /resolve_org_id_by_join_code/i.test(msg) ||
+        /function .* does not exist/i.test(msg)
+      ) {
+        msg =
+          "This project’s database is missing resolve_org_id_by_join_code. Apply supabase/migrations/0016_resolve_org_id_by_join_code.sql to your Supabase project (for example supabase db push), then try again.";
+      }
+      redirect(registerErrorPath(msg, registerFlow === "new" ? "new" : undefined));
     }
-    if (!joinedOrgId) {
-      redirect(`/register?error=${encodeURIComponent("Could not join that organization.")}`);
+    if (!resolvedOrgId) {
+      redirect(
+        registerErrorPath(
+          "Invalid or unknown invite code. Check with your admin, or create a new company instead.",
+          registerFlow === "new" ? "new" : undefined,
+        ),
+      );
     }
-    organization_id = joinedOrgId as string;
+    organization_id = resolvedOrgId as string;
+
+    const { error: memberError } = await db.from("organization_members").insert({
+      organization_id,
+      user_id: userId,
+      member_role: "member",
+    });
+    if (memberError && memberError.code !== "23505") {
+      redirect(registerErrorPath(memberError.message, registerFlow === "new" ? "new" : undefined));
+    }
   } else {
-    const { data: org, error: orgError } = await supabase
+    const { data: org, error: orgError } = await db
       .from("organizations")
       .insert({ name: organization_name, created_by: userId })
       .select("id")
       .single();
 
-    if (orgError) redirect(`/register?error=${encodeURIComponent(orgError.message)}`);
+    if (orgError) {
+      redirect(registerErrorPath(orgError.message, registerFlow === "new" ? "new" : undefined));
+    }
 
     organization_id = org.id as string;
 
-    const { error: memberError } = await supabase.from("organization_members").insert({
+    const { error: memberError } = await db.from("organization_members").insert({
       organization_id,
       user_id: userId,
       member_role: "owner",
     });
 
-    if (memberError) redirect(`/register?error=${encodeURIComponent(memberError.message)}`);
+    if (memberError) {
+      redirect(registerErrorPath(memberError.message, registerFlow === "new" ? "new" : undefined));
+    }
   }
 
-  const { error: profileError } = await supabase.from("profiles").insert({
+  const { error: profileError } = await db.from("profiles").insert({
     user_id: userId,
     organization_id,
     first_name,
@@ -102,10 +161,12 @@ export async function registerAction(formData: FormData) {
     app_role: "user",
   });
 
-  if (profileError) redirect(`/register?error=${encodeURIComponent(profileError.message)}`);
+  if (profileError) {
+    redirect(registerErrorPath(profileError.message, registerFlow === "new" ? "new" : undefined));
+  }
 
   if (hobbyNames.length) {
-    const { data: hobbyRows, error: hobbySelectError } = await supabase
+    const { data: hobbyRows, error: hobbySelectError } = await db
       .from("hobbies")
       .select("id,name")
       .in("name", hobbyNames);
@@ -116,11 +177,11 @@ export async function registerAction(formData: FormData) {
         user_id: userId,
         hobby_id: h.id,
       }));
-      await supabase.from("user_hobbies").insert(hobbyInserts);
+      await db.from("user_hobbies").insert(hobbyInserts);
     }
   }
 
-  await supabase.from("audit_logs").insert({
+  await db.from("audit_logs").insert({
     organization_id,
     user_id: userId,
     action: "auth.register",
@@ -128,6 +189,9 @@ export async function registerAction(formData: FormData) {
     entity_id: userId,
   });
 
-  redirect("/dashboard");
-}
+  if (hasSession) {
+    redirect("/dashboard");
+  }
 
+  redirect("/verify");
+}

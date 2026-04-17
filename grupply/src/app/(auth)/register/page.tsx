@@ -5,9 +5,11 @@ import { registerAction } from "./actions";
 export default async function RegisterPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string }>;
+  searchParams?: Promise<{ error?: string; flow?: string }>;
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const isCreateFlow = resolvedSearchParams?.flow === "new";
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -15,11 +17,19 @@ export default async function RegisterPage({
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Start connecting through events and activities.
         </p>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Each organization is a separate space identified by an id in the database. Typing the same
-          company name as someone else does not join you to their organization — use a join code from
-          your admin, or pick a new name only when you are the first person setting up your company.
-        </p>
+        {isCreateFlow ? (
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            You are creating a <strong className="font-medium text-zinc-800 dark:text-zinc-200">new</strong>{" "}
+            company space. You will be the owner. An invite code is generated automatically so you can
+            invite teammates from Settings after you sign up.
+          </p>
+        ) : (
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            Enter the <strong className="font-medium text-zinc-800 dark:text-zinc-200">invite code</strong>{" "}
+            from your company admin (Settings in Grupply). It is a secret string, not the company display
+            name.
+          </p>
+        )}
       </div>
 
       {resolvedSearchParams?.error ? (
@@ -29,31 +39,51 @@ export default async function RegisterPage({
       ) : null}
 
       <form action={registerAction} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="text-zinc-700 dark:text-zinc-300">Company join code (optional)</span>
-          <input
-            name="join_code"
-            autoComplete="off"
-            placeholder="From your org admin"
-            className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
-          />
-          <span className="text-xs text-zinc-500 dark:text-zinc-500">
-            If your company already uses Grupply, enter the code here and leave &quot;New organization
-            name&quot; empty.
-          </span>
-        </label>
+        {isCreateFlow ? <input type="hidden" name="_flow" value="new" /> : null}
 
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="text-zinc-700 dark:text-zinc-300">New organization name</span>
-          <input
-            name="organization_name"
-            placeholder="Only when creating a new company space"
-            className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
-          />
-          <span className="text-xs text-zinc-500 dark:text-zinc-500">
-            Creates a new organization. Leave empty if you used a join code above.
-          </span>
-        </label>
+        {isCreateFlow ? (
+          <>
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="text-zinc-700 dark:text-zinc-300">Organization name</span>
+              <input
+                name="organization_name"
+                required
+                placeholder="Your company or team name"
+                className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+              />
+            </label>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500">
+              <Link href="/register" className="font-medium text-zinc-700 underline dark:text-zinc-300">
+                Join an existing company instead
+              </Link>{" "}
+              (invite code from your admin).
+            </p>
+          </>
+        ) : (
+          <>
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="text-zinc-700 dark:text-zinc-300">Invite code</span>
+              <input
+                name="join_code"
+                autoComplete="off"
+                required
+                placeholder="Paste the code from your admin"
+                className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+              />
+              <span className="text-xs text-zinc-500 dark:text-zinc-500">
+                Ask an owner or admin to copy it from Settings if you do not have one yet.
+              </span>
+            </label>
+            <p className="text-xs text-zinc-500 dark:text-zinc-500">
+              <Link
+                href="/register?flow=new"
+                className="font-medium text-zinc-700 underline dark:text-zinc-300"
+              >
+                Create a new company instead
+              </Link>
+            </p>
+          </>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
@@ -97,9 +127,7 @@ export default async function RegisterPage({
         </label>
 
         <label className="flex flex-col gap-1.5 text-sm">
-          <span className="text-zinc-700 dark:text-zinc-300">
-            Hobbies (comma-separated)
-          </span>
+          <span className="text-zinc-700 dark:text-zinc-300">Hobbies (comma-separated)</span>
           <input
             name="hobbies"
             placeholder="Coffee, Hiking, Board games"
@@ -133,4 +161,3 @@ export default async function RegisterPage({
     </div>
   );
 }
-
