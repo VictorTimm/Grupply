@@ -2,6 +2,13 @@
 
 import { useState, useTransition } from "react";
 
+import {
+  buttonClass,
+  inputClass,
+  labelClass,
+  textareaClass,
+} from "@/components/ui";
+
 type EventData = {
   id: string;
   title: string;
@@ -32,13 +39,14 @@ export function EventEditForm({
 
   if (!open) {
     return (
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+      <section className="rounded-[14px] border border-border bg-surface px-5 py-3">
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-sm font-medium text-zinc-700 hover:underline dark:text-zinc-300"
+          className="flex items-center gap-2 text-[13px] uppercase tracking-[0.14em] text-muted hover:text-ember-deep"
         >
-          Edit event details
+          <span aria-hidden className="text-[15px] leading-none">&#x270E;</span>
+          Edit details
         </button>
       </section>
     );
@@ -49,19 +57,21 @@ export function EventEditForm({
     : "";
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Edit event</h2>
+    <section className="rounded-[14px] border border-border bg-surface p-6">
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <h2 className="text-[13px] uppercase tracking-[0.14em] text-muted font-medium">
+          Edit details
+        </h2>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="text-xs text-zinc-500 hover:underline dark:text-zinc-400"
+          className="text-[11px] uppercase tracking-[0.14em] text-muted hover:text-ink"
         >
-          Cancel
+          Close
         </button>
       </div>
       <form
-        className="mt-3 flex flex-col gap-3"
+        className="flex flex-col gap-5"
         action={(fd) => {
           startTransition(async () => {
             await updateAction(event.id, fd);
@@ -69,62 +79,71 @@ export function EventEditForm({
           });
         }}
       >
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-700 dark:text-zinc-300">Title</span>
+        <label className="block">
+          <span className={labelClass()}>Title</span>
           <input
             name="title"
             required
             defaultValue={event.title}
-            className="h-10 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+            className={inputClass()}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-700 dark:text-zinc-300">Description</span>
+        <label className="block">
+          <span className={labelClass()}>Description</span>
           <textarea
             name="description"
             rows={3}
             defaultValue={event.description ?? ""}
-            className="resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+            className={textareaClass()}
           />
         </label>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-700 dark:text-zinc-300">Date & time</span>
+        <div className="grid grid-cols-[3fr_2fr] gap-4">
+          <label className="block">
+            <span className={labelClass()}>Date &amp; time</span>
             <input
               name="date_time"
               type="datetime-local"
               required
               defaultValue={dtLocal}
-              className="h-10 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+              className={inputClass()}
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-700 dark:text-zinc-300">Capacity</span>
+          <label className="block">
+            <span className={labelClass()}>Seats</span>
             <input
               name="capacity"
               type="number"
               min={1}
               required
               defaultValue={event.capacity}
-              className="h-10 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+              className={inputClass()}
             />
           </label>
         </div>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-700 dark:text-zinc-300">Location</span>
+        <label className="block">
+          <span className={labelClass()}>Location</span>
           <input
             name="location"
             defaultValue={event.location ?? ""}
-            className="h-10 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+            className={inputClass()}
           />
         </label>
-        <button
-          type="submit"
-          disabled={pending}
-          className="mt-1 h-10 rounded-xl bg-zinc-950 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-        >
-          {pending ? "Saving…" : "Save changes"}
-        </button>
+        <div className="flex items-center justify-end gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className={buttonClass({ variant: "ghost", size: "md" })}
+          >
+            Discard
+          </button>
+          <button
+            type="submit"
+            disabled={pending}
+            className={buttonClass({ variant: "primary", size: "md" })}
+          >
+            {pending ? "Saving…" : "Save changes"}
+          </button>
+        </div>
       </form>
     </section>
   );

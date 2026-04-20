@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { Avatar } from "@/components/Avatar";
+import { buttonClass } from "@/components/ui";
 import { setAvatarUrlAction } from "./actions";
 
 type Props = {
@@ -85,13 +86,19 @@ export function ProfileAvatarUploader({ userId, currentUrl, initials }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-4">
-      <Avatar src={preview} initials={initials} size="lg" />
+    <div className="flex items-center gap-6">
+      <Avatar
+        src={preview}
+        initials={initials}
+        size="xl"
+        shape="squircle"
+        className="h-28 w-28 text-[32px]"
+      />
 
-      <div className="flex flex-col gap-1">
-        <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
           <label
-            className={`cursor-pointer rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium transition hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 ${busy ? "pointer-events-none opacity-50" : ""}`}
+            className={`${buttonClass({ variant: "secondary", size: "sm" })} ${busy ? "pointer-events-none opacity-50" : ""} cursor-pointer`}
           >
             {busy ? "Uploading…" : preview ? "Change photo" : "Upload photo"}
             <input
@@ -109,19 +116,20 @@ export function ProfileAvatarUploader({ userId, currentUrl, initials }: Props) {
               type="button"
               onClick={handleRemove}
               disabled={busy}
-              className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:border-zinc-800 dark:text-red-400 dark:hover:bg-red-950"
+              className={buttonClass({ variant: "ghost", size: "sm" })}
             >
               Remove
             </button>
           )}
         </div>
 
-        {error && (
-          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+        {error ? (
+          <p className="text-[12px] text-clay">{error}</p>
+        ) : (
+          <p className="text-[11px] text-muted">
+            JPG, PNG or WebP &middot; under {MAX_SIZE_MB} MB
+          </p>
         )}
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          JPG, PNG or WebP. Max {MAX_SIZE_MB} MB.
-        </p>
       </div>
     </div>
   );

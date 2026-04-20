@@ -1,6 +1,12 @@
 import Link from "next/link";
 
 import { SubmitButton } from "@/components/SubmitButton";
+import {
+  Eyebrow,
+  buttonClass,
+  inputClass,
+  labelClass,
+} from "@/components/ui";
 
 import { loginAction } from "./actions";
 
@@ -10,79 +16,108 @@ export default async function LoginPage({
   searchParams?: Promise<{ error?: string; verified?: string; reset?: string }>;
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Log in</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Welcome back to Grupply.
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-3">
+        <Eyebrow>Welcome back</Eyebrow>
+        <h1 className="font-display text-[44px] leading-[1] font-medium tracking-tight">
+          Sign in
+        </h1>
+        <p className="text-[14px] text-muted leading-relaxed">
+          Pick up where your crew left off.
         </p>
       </div>
 
       {resolvedSearchParams?.verified === "1" ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
-          Your email is verified. Log in to continue.
+        <div className="border-l-2 border-sage bg-sage/5 px-3 py-2 text-[13px] text-sage">
+          Your email is verified. Sign in to continue.
         </div>
       ) : null}
 
       {resolvedSearchParams?.reset === "success" ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
-          Your password has been updated. Log in with your new password.
+        <div className="border-l-2 border-sage bg-sage/5 px-3 py-2 text-[13px] text-sage">
+          Password updated. Sign in with your new password.
         </div>
       ) : null}
 
       {resolvedSearchParams?.error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+        <div
+          className="border-l-2 border-clay bg-clay/5 px-3 py-2 text-[13px] text-clay"
+          role="alert"
+        >
           {resolvedSearchParams.error}
         </div>
       ) : null}
 
       <form
         action={loginAction}
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-5"
         suppressHydrationWarning
       >
-        <label className="flex flex-col gap-1.5 text-sm" suppressHydrationWarning>
-          <span className="text-zinc-700 dark:text-zinc-300">Email</span>
+        <div>
+          <label className={labelClass()} htmlFor="email">
+            Work email
+          </label>
           <input
+            id="email"
             name="email"
             type="email"
             required
             autoComplete="email"
             suppressHydrationWarning
-            className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none ring-0 transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+            className={inputClass()}
           />
-        </label>
+        </div>
 
-        <label className="flex flex-col gap-1.5 text-sm" suppressHydrationWarning>
-          <span className="text-zinc-700 dark:text-zinc-300">Password</span>
+        <div>
+          <div className="flex items-baseline justify-between mb-1.5">
+            <label className={labelClass("mb-0")} htmlFor="password">
+              Password
+            </label>
+            <Link
+              href="/reset"
+              className="text-[11px] uppercase tracking-[0.14em] text-muted hover:text-ink"
+            >
+              Forgot?
+            </Link>
+          </div>
           <input
+            id="password"
             name="password"
             type="password"
             required
             autoComplete="current-password"
             suppressHydrationWarning
-            className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none ring-0 transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+            className={inputClass()}
           />
-        </label>
+        </div>
 
         <SubmitButton
           pendingLabel="Signing in…"
-          className="h-11 rounded-2xl bg-[#0052FF] text-sm font-medium text-white shadow-sm transition hover:bg-[#0046DD]"
+          className={buttonClass({ variant: "primary", size: "lg", full: true })}
         >
           Continue
         </SubmitButton>
       </form>
 
-      <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-400">
-        <Link href="/register" className="hover:underline">
-          Create account
-        </Link>
-        <Link href="/reset" className="hover:underline">
-          Forgot password
-        </Link>
+      <div className="flex items-center gap-3 text-[12px] text-muted">
+        <div className="h-px flex-1 bg-border" />
+        <span>or</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      <div className="flex flex-col gap-2 text-center">
+        <p className="text-[13px] text-muted">
+          New to Grupply?{" "}
+          <Link
+            href="/register"
+            className="font-medium text-ink hover:text-ember"
+          >
+            Create an account
+          </Link>
+        </p>
       </div>
     </div>
   );
 }
-

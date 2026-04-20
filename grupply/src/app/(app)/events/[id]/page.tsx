@@ -6,9 +6,14 @@ import { Avatar } from "@/components/Avatar";
 import { joinEventAction, leaveEventAction } from "@/app/(app)/dashboard/actions";
 import { ConfirmActionForm } from "@/components/ConfirmActionForm";
 import { SubmitButton } from "@/components/SubmitButton";
+import { Chip, buttonClass } from "@/components/ui";
 
 import { updateEventAction, cancelEventAction, deleteEventAction } from "./actions";
 import { EventEditForm } from "./EventEditForm";
+
+function initialsOf(first: string, last: string) {
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
+}
 
 export default async function EventDetailPage({
   params,
@@ -31,7 +36,7 @@ export default async function EventDetailPage({
 
   const { data: creator } = await supabase
     .from("profiles")
-    .select("first_name, last_name")
+    .select("user_id, first_name, last_name, avatar_url")
     .eq("user_id", event.creator_id)
     .single();
 
@@ -74,168 +79,239 @@ export default async function EventDetailPage({
   const isCanceled = event.status === "canceled";
   const isFull = attendeeList.length >= event.capacity;
   const isPast = new Date(event.date_time) < new Date();
+  const isToday = new Date(event.date_time).toDateString() === new Date().toDateString();
+
+  const d = new Date(event.date_time);
+  const datePretty = d.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+  const timePretty = d.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      <div className="flex flex-col gap-4 lg:col-span-2">
-        <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-lg font-semibold">{event.title}</h1>
-              <div className="mt-1 flex flex-wrap gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                {isCanceled && (
-                  <span className="rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-                    Canceled
-                  </span>
-                )}
-                {isPast && !isCanceled && (
-                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-medium text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
-                    Past
-                  </span>
-                )}
-                {isFull && !isCanceled && !isPast && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">
-                    Full
-                  </span>
-                )}
-              </div>
-            </div>
-            <Link
-              href="/events/discover"
-              className="shrink-0 text-sm text-zinc-500 hover:underline dark:text-zinc-400"
-            >
-              Back
-            </Link>
+    <div className="flex flex-col gap-6">
+      <div>
+        <Link
+          href="/events/discover"
+          className="text-[11px] uppercase tracking-[0.14em] text-muted hover:text-ember-deep"
+        >
+          &larr; Back to Discover
+        </Link>
+      </div>
+
+      <header className="rounded-[16px] border border-border bg-surface p-6 md:p-8 flex flex-col gap-5">
+        <div className="flex items-center gap-2 flex-wrap">
+          {isToday && !isCanceled ? (
+            <Chip tone="ember" size="sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-ember animate-pulse" />
+              Today
+            </Chip>
+          ) : null}
+          {isCanceled ? <Chip tone="clay" size="sm">Canceled</Chip> : null}
+          {isPast && !isCanceled ? <Chip tone="outline" size="sm">Past</Chip> : null}
+          {isFull && !isCanceled && !isPast ? (
+            <Chip tone="ember" size="sm">Full</Chip>
+          ) : null}
+          {isAttending ? <Chip tone="sage" size="sm">Going</Chip> : null}
+          {isCreator ? <Chip tone="iris" size="sm">You&rsquo;re hosting</Chip> : null}
+        </div>
+
+        <h1 className="font-display text-[36px] md:text-[48px] leading-[1.02] font-medium tracking-tight text-ink max-w-3xl">
+          {event.title}
+        </h1>
+
+        <dl className="grid gap-x-6 gap-y-3 text-[14px] md:grid-cols-2">
+          <div className="flex items-baseline gap-2">
+            <dt className="text-[11px] uppercase tracking-[0.14em] text-muted w-16 shrink-0">
+              When
+            </dt>
+            <dd className="text-ink">
+              {datePretty}, {timePretty}
+            </dd>
           </div>
-
-          <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Date & time</dt>
-              <dd className="mt-0.5">{new Date(event.date_time).toLocaleString()}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Location</dt>
-              <dd className="mt-0.5">{event.location || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Capacity</dt>
-              <dd className="mt-0.5">
-                {attendeeList.length} / {event.capacity}
+          <div className="flex items-baseline gap-2">
+            <dt className="text-[11px] uppercase tracking-[0.14em] text-muted w-16 shrink-0">
+              Where
+            </dt>
+            <dd className="text-ink">{event.location || "TBD"}</dd>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <dt className="text-[11px] uppercase tracking-[0.14em] text-muted w-16 shrink-0">
+              Seats
+            </dt>
+            <dd className="text-ink font-mono">
+              {attendeeList.length}/{event.capacity}
+            </dd>
+          </div>
+          {creator ? (
+            <div className="flex items-baseline gap-2">
+              <dt className="text-[11px] uppercase tracking-[0.14em] text-muted w-16 shrink-0">
+                Host
+              </dt>
+              <dd>
+                <Link
+                  href={`/people/${creator.user_id}`}
+                  className="inline-flex items-center gap-1.5 text-ink hover:text-iris-deep"
+                >
+                  <Avatar
+                    src={creator.avatar_url}
+                    initials={initialsOf(creator.first_name, creator.last_name)}
+                    size="sm"
+                    className="h-6 w-6 text-[10px]"
+                  />
+                  {creator.first_name} {creator.last_name}
+                </Link>
               </dd>
             </div>
-            <div>
-              <dt className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Created by</dt>
-              <dd className="mt-0.5">
-                {creator ? `${creator.first_name} ${creator.last_name}` : "Unknown"}
-              </dd>
-            </div>
-          </dl>
+          ) : null}
+        </dl>
 
-          {event.description && (
-            <p className="mt-4 text-sm text-zinc-700 dark:text-zinc-300">
-              {event.description}
-            </p>
-          )}
+        {!isCanceled && !isPast ? (
+          <div className="flex items-center gap-3">
+            {isAttending ? (
+              <form
+                action={async () => {
+                  "use server";
+                  await leaveEventAction(id);
+                }}
+              >
+                <SubmitButton
+                  pendingLabel={"Leaving\u2026"}
+                  className={buttonClass({ variant: "secondary", size: "lg" })}
+                >
+                  Leave event
+                </SubmitButton>
+              </form>
+            ) : !isFull ? (
+              <form
+                action={async () => {
+                  "use server";
+                  await joinEventAction(id);
+                }}
+              >
+                <SubmitButton
+                  pendingLabel={"Joining\u2026"}
+                  className={buttonClass({ variant: "primary", size: "lg" })}
+                >
+                  I&rsquo;m in
+                </SubmitButton>
+              </form>
+            ) : (
+              <span className={buttonClass({ variant: "quiet", size: "lg" })}>
+                Event is full
+              </span>
+            )}
+          </div>
+        ) : null}
+      </header>
 
-          {!isCanceled && !isPast && (
-            <div className="mt-5 flex gap-2">
-              {isAttending ? (
-                <form action={async () => { "use server"; await leaveEventAction(id); }}>
-                  <SubmitButton
-                    pendingLabel="Leaving…"
-                    className="rounded-xl border border-zinc-200 px-4 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
-                  >
-                    Leave event
-                  </SubmitButton>
-                </form>
-              ) : !isFull ? (
-                <form action={async () => { "use server"; await joinEventAction(id); }}>
-                  <SubmitButton
-                    pendingLabel="Joining…"
-                    className="rounded-xl bg-zinc-950 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-                  >
-                    Join event
-                  </SubmitButton>
-                </form>
-              ) : (
-                <span className="rounded-xl border border-zinc-200 px-4 py-2 text-sm text-zinc-400 dark:border-zinc-800">
-                  Event is full
-                </span>
-              )}
-            </div>
-          )}
-        </section>
+      <div className="grid gap-6 md:grid-cols-[7fr_5fr]">
+        <div className="flex flex-col gap-6">
+          <section className="rounded-[14px] border border-border bg-surface p-6">
+            {event.description ? (
+              <p className="text-[15px] leading-[1.7] text-ink-soft max-w-2xl whitespace-pre-wrap">
+                {event.description}
+              </p>
+            ) : (
+              <p className="text-[14px] text-muted italic">
+                No description yet. Ping the host for vibes.
+              </p>
+            )}
+          </section>
 
-        {isCreator && !isCanceled && (
-          <EventEditForm event={event} updateAction={updateEventAction} />
-        )}
+          {isCreator && !isCanceled ? (
+            <EventEditForm event={event} updateAction={updateEventAction} />
+          ) : null}
 
-        {isCreator && (
-          <section className="rounded-2xl border border-red-200 bg-white p-5 dark:border-red-900/50 dark:bg-zinc-950">
-            <h2 className="text-sm font-semibold text-red-700 dark:text-red-300">
-              Danger zone
-            </h2>
-            <div className="mt-3 flex gap-2">
-              {!isCanceled && (
+          {isCreator ? (
+            <section className="rounded-[14px] border border-clay/40 bg-clay/5 p-6 flex flex-col gap-3">
+              <h2 className="text-[13px] uppercase tracking-[0.14em] text-clay font-medium">
+                Danger zone
+              </h2>
+              <p className="text-[13px] text-muted">
+                These actions can&rsquo;t be undone.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {!isCanceled ? (
+                  <ConfirmActionForm
+                    action={async () => {
+                      "use server";
+                      await cancelEventAction(id);
+                    }}
+                    initialLabel="Cancel event"
+                    confirmLabel="Click again to cancel"
+                    pendingLabel={"Canceling\u2026"}
+                    className={buttonClass({ variant: "danger", size: "sm" })}
+                    confirmClassName={buttonClass({ variant: "danger", size: "sm" }) + " bg-clay/10 border-clay"}
+                    formClassName="inline"
+                  />
+                ) : null}
                 <ConfirmActionForm
                   action={async () => {
                     "use server";
-                    await cancelEventAction(id);
+                    await deleteEventAction(id);
                   }}
-                  initialLabel="Cancel event"
-                  confirmLabel="Click again to cancel"
-                  pendingLabel="Canceling…"
-                  className="rounded-xl border border-red-200 px-4 py-2 text-sm text-red-700 hover:bg-red-50 dark:border-red-900/50 dark:text-red-300 dark:hover:bg-red-950/30"
-                  confirmClassName="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-800 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/60"
+                  initialLabel="Delete event"
+                  confirmLabel="Click again to delete"
+                  pendingLabel={"Deleting\u2026"}
+                  className={buttonClass({ variant: "danger", size: "sm" }) + " bg-clay text-white border-clay hover:bg-clay"}
+                  confirmClassName={buttonClass({ variant: "danger", size: "sm" }) + " bg-clay text-white border-clay"}
                   formClassName="inline"
                 />
-              )}
-              <ConfirmActionForm
-                action={async () => {
-                  "use server";
-                  await deleteEventAction(id);
-                }}
-                initialLabel="Delete event"
-                confirmLabel="Click again to delete"
-                pendingLabel="Deleting…"
-                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-                confirmClassName="rounded-xl bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800"
-                formClassName="inline"
-              />
-            </div>
-          </section>
-        )}
-      </div>
+              </div>
+            </section>
+          ) : null}
+        </div>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="text-sm font-semibold">
-          Attendees ({attendeeList.length})
-        </h2>
-        <div className="mt-3 flex flex-col gap-2">
+        <aside className="rounded-[14px] border border-border bg-surface overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border">
+            <h2 className="text-[13px] uppercase tracking-[0.14em] text-muted font-medium">
+              Attendees
+            </h2>
+            <span className="font-mono text-[12px] text-muted">
+              {attendeeList.length}/{event.capacity}
+            </span>
+          </div>
+
           {attendeeList.length === 0 ? (
-            <div className="text-sm text-zinc-500 dark:text-zinc-400">
-              No attendees yet.
+            <div className="px-5 py-5 text-[13px] text-muted">
+              Be the first to say yes.
             </div>
           ) : (
-            attendeeList.map((a) => (
-              <Link
-                key={a.user_id}
-                href={`/people/${a.user_id}`}
-                className="flex items-center gap-2 rounded-xl border border-zinc-100 px-3 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-900 dark:hover:bg-zinc-900"
-              >
-                <Avatar
-                  src={a.avatar_url}
-                  initials={`${a.first_name.charAt(0)}${a.last_name.charAt(0)}`}
-                  size="sm"
-                />
-                <span>
-                  {a.first_name} {a.last_name}
-                </span>
-              </Link>
-            ))
+            <ul className="flex flex-col">
+              {attendeeList.map((a, i) => (
+                <li
+                  key={a.user_id}
+                  className={`px-5 py-2.5 ${i === 0 ? "" : "border-t border-border"}`}
+                >
+                  <Link
+                    href={`/people/${a.user_id}`}
+                    className="group flex items-center gap-3"
+                  >
+                    <Avatar
+                      src={a.avatar_url}
+                      initials={initialsOf(a.first_name, a.last_name)}
+                      size="sm"
+                    />
+                    <span className="text-[14px] text-ink group-hover:text-iris-deep">
+                      {a.first_name} {a.last_name}
+                    </span>
+                    {a.user_id === event.creator_id ? (
+                      <span className="ml-auto text-[10px] uppercase tracking-[0.14em] text-iris-deep">
+                        Host
+                      </span>
+                    ) : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           )}
-        </div>
-      </section>
+        </aside>
+      </div>
     </div>
   );
 }

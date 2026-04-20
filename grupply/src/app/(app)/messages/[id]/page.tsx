@@ -20,7 +20,7 @@ export default async function ConversationPage({
 
   const { data: participants } = await supabase
     .from("conversation_participants")
-    .select("user_id, profiles(first_name, last_name, avatar_url)")
+    .select("user_id, profiles(user_id, first_name, last_name, avatar_url)")
     .eq("conversation_id", id);
 
   const allowed = (participants ?? []).some((p) => p.user_id === userId);
@@ -33,10 +33,22 @@ export default async function ConversationPage({
     );
   }
 
-  const otherParticipant = (participants ?? []).find((p) => p.user_id !== userId);
+  const otherParticipant = (participants ?? []).find(
+    (p) => p.user_id !== userId,
+  );
   const raw = otherParticipant?.profiles as unknown as
-    | { first_name: string; last_name: string; avatar_url: string | null }
-    | { first_name: string; last_name: string; avatar_url: string | null }[]
+    | {
+        user_id: string;
+        first_name: string;
+        last_name: string;
+        avatar_url: string | null;
+      }
+    | {
+        user_id: string;
+        first_name: string;
+        last_name: string;
+        avatar_url: string | null;
+      }[]
     | null;
   const partnerProfile = Array.isArray(raw) ? raw[0] : raw;
   const partnerName = partnerProfile
@@ -46,38 +58,62 @@ export default async function ConversationPage({
     ? `${partnerProfile.first_name.charAt(0)}${partnerProfile.last_name.charAt(0)}`
     : "?";
   const partnerAvatarUrl = partnerProfile?.avatar_url ?? null;
+  const partnerUserId = partnerProfile?.user_id ?? otherParticipant?.user_id;
 
   const { data: messages } = await supabase
     .from("messages")
     .select("id,sender_id,content,created_at")
     .eq("conversation_id", id)
     .order("created_at", { ascending: true })
-    .limit(100);
+    .limit(200);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Avatar src={partnerAvatarUrl} initials={partnerInitials} size="sm" />
-          <div className="text-sm font-semibold">{partnerName}</div>
+    <div className="flex h-full min-h-[520px] flex-col">
+      <header className="flex items-center justify-between gap-3 border-b border-border px-5 py-3">
+        <div className="flex items-center gap-3">
+          <Avatar
+            src={partnerAvatarUrl}
+            initials={partnerInitials}
+            size="sm"
+            shape="squircle"
+          />
+          <div className="flex flex-col">
+            {partnerUserId ? (
+              <Link
+                href={`/people/${partnerUserId}`}
+                className="text-[14px] font-medium text-ink hover:text-ember"
+              >
+                {partnerName}
+              </Link>
+            ) : (
+              <span className="text-[14px] font-medium text-ink">
+                {partnerName}
+              </span>
+            )}
+            <span className="text-[11px] uppercase tracking-[0.12em] text-muted">
+              Direct message
+            </span>
+          </div>
         </div>
         <Link
           href="/messages"
-          className="text-sm text-zinc-500 hover:underline dark:text-zinc-400"
+          className="text-[12px] uppercase tracking-[0.12em] text-muted hover:text-ink md:hidden"
         >
-          Back to inbox
+          Back
         </Link>
-      </div>
+      </header>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="flex-1 overflow-y-auto px-5 py-5">
         <MessagesThread
           conversationId={id}
           currentUserId={userId}
           initialMessages={messages ?? []}
         />
-      </section>
+      </div>
 
-      <SendMessageForm conversationId={id} />
+      <div className="border-t border-border px-5 py-3 bg-surface">
+        <SendMessageForm conversationId={id} />
+      </div>
     </div>
   );
 }

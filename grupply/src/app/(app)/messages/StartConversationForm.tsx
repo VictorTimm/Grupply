@@ -2,6 +2,8 @@
 
 import { useTransition } from "react";
 
+import { buttonClass, inputClass } from "@/components/ui";
+
 import { startConversationAction } from "./actions";
 
 export function StartConversationForm({
@@ -13,14 +15,14 @@ export function StartConversationForm({
 
   return (
     <form
-      className="mt-3 flex flex-col gap-2"
+      className="flex w-full flex-col gap-2"
       action={(formData) => {
         startTransition(() => startConversationAction(formData));
       }}
     >
       <select
         name="recipient_id"
-        className="h-11 rounded-xl border border-zinc-200 bg-white px-3 text-sm outline-none dark:border-zinc-800 dark:bg-zinc-950"
+        className={inputClass()}
         required
         defaultValue=""
       >
@@ -36,7 +38,7 @@ export function StartConversationForm({
       <button
         type="submit"
         disabled={pending}
-        className="h-11 rounded-xl bg-zinc-950 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+        className={buttonClass({ variant: "primary", size: "md", full: true })}
       >
         {pending ? "Starting…" : "Start conversation"}
       </button>

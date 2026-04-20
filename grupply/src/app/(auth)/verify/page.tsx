@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Eyebrow } from "@/components/ui";
+
 import { ResendEmailButton } from "./ResendEmailButton";
 
 export default async function VerifyPage({
@@ -11,21 +13,37 @@ export default async function VerifyPage({
   const email = String(resolvedSearchParams?.email ?? "").trim();
 
   return (
-    <div className="flex flex-col gap-3">
-      <h1 className="text-2xl font-semibold tracking-tight">Verify your email</h1>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Check your inbox for a verification link, then come back and log in.
-      </p>
-      {email ? <ResendEmailButton email={email} /> : null}
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <Eyebrow tone="ember">Check your inbox</Eyebrow>
+        <h1 className="font-display text-[40px] leading-[1.02] font-medium tracking-tight">
+          One more thing
+        </h1>
+        <p className="text-[14px] text-muted leading-relaxed max-w-sm">
+          We just sent a verification link
+          {email ? (
+            <>
+              {" "}to <span className="text-ink">{email}</span>.
+            </>
+          ) : (
+            "."
+          )}{" "}
+          Click it, then come back and sign in.
+        </p>
+      </div>
+
+      <div className="border-t border-border pt-6">
+        {email ? <ResendEmailButton email={email} /> : null}
+      </div>
+
       <div className="pt-2">
         <Link
           href="/login"
-          className="text-sm font-medium text-zinc-950 hover:underline dark:text-zinc-50"
+          className="text-[13px] font-medium text-ink hover:text-ember"
         >
-          Go to login
+          Go to sign in &rarr;
         </Link>
       </div>
     </div>
   );
 }
-

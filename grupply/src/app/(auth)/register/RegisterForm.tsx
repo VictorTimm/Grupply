@@ -4,6 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { SubmitButton } from "@/components/SubmitButton";
+import {
+  buttonClass,
+  inputClass,
+  labelClass,
+  textareaClass,
+} from "@/components/ui";
 
 type RegisterFormProps = {
   isCreateFlow: boolean;
@@ -20,7 +26,7 @@ export function RegisterForm({
 
   function validatePasswords() {
     if (password !== confirmPassword) {
-      setPasswordError("Passwords do not match.");
+      setPasswordError("Passwords don\u2019t match.");
       return false;
     }
 
@@ -31,7 +37,7 @@ export function RegisterForm({
   return (
     <form
       action={registerAction}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
       onSubmit={(event) => {
         if (!validatePasswords()) {
           event.preventDefault();
@@ -41,144 +47,173 @@ export function RegisterForm({
       {isCreateFlow ? <input type="hidden" name="_flow" value="new" /> : null}
 
       {isCreateFlow ? (
-        <>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="text-zinc-700 dark:text-zinc-300">Organization name</span>
-            <input
-              name="organization_name"
-              required
-              placeholder="Your company or team name"
-              className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
-            />
+        <div>
+          <label className={labelClass()} htmlFor="organization_name">
+            Organization name
           </label>
-          <p className="text-xs text-zinc-500 dark:text-zinc-500">
-            <Link href="/register" className="font-medium text-zinc-700 underline dark:text-zinc-300">
+          <input
+            id="organization_name"
+            name="organization_name"
+            required
+            placeholder="Your company or team name"
+            className={inputClass()}
+          />
+          <p className="mt-2 text-[12px] text-muted">
+            <Link
+              href="/register"
+              className="font-medium text-ink underline underline-offset-2 hover:text-ember"
+            >
               Join an existing company instead
             </Link>{" "}
-            (invite code from your admin).
+            (invite code required).
           </p>
-        </>
+        </div>
       ) : (
-        <>
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="text-zinc-700 dark:text-zinc-300">Invite code</span>
-            <input
-              name="join_code"
-              autoComplete="off"
-              required
-              placeholder="Paste the code from your admin"
-              className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
-            />
-            <span className="text-xs text-zinc-500 dark:text-zinc-500">
-              Ask an owner or admin to copy it from Settings if you do not have one yet.
-            </span>
+        <div>
+          <label className={labelClass()} htmlFor="join_code">
+            Invite code
           </label>
-          <p className="text-xs text-zinc-500 dark:text-zinc-500">
+          <input
+            id="join_code"
+            name="join_code"
+            autoComplete="off"
+            required
+            placeholder="Paste the code from your admin"
+            className={inputClass() + " font-mono"}
+          />
+          <p className="mt-2 text-[12px] text-muted">
+            Ask an owner or admin to copy it from Settings, or{" "}
             <Link
               href="/register?flow=new"
-              className="font-medium text-zinc-700 underline dark:text-zinc-300"
+              className="font-medium text-ink underline underline-offset-2 hover:text-ember"
             >
-              Create a new company instead
+              start a new company
             </Link>
+            .
           </p>
-        </>
+        </div>
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="text-zinc-700 dark:text-zinc-300">First name</span>
+        <div>
+          <label className={labelClass()} htmlFor="first_name">
+            First name
+          </label>
           <input
+            id="first_name"
             name="first_name"
             required
-            className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+            autoComplete="given-name"
+            className={inputClass()}
           />
-        </label>
-        <label className="flex flex-col gap-1.5 text-sm">
-          <span className="text-zinc-700 dark:text-zinc-300">Last name</span>
+        </div>
+        <div>
+          <label className={labelClass()} htmlFor="last_name">
+            Last name
+          </label>
           <input
+            id="last_name"
             name="last_name"
             required
-            className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+            autoComplete="family-name"
+            className={inputClass()}
           />
-        </label>
+        </div>
       </div>
 
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-zinc-700 dark:text-zinc-300">Email</span>
+      <div>
+        <label className={labelClass()} htmlFor="email">
+          Work email
+        </label>
         <input
+          id="email"
           name="email"
           type="email"
           required
           autoComplete="email"
-          className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+          className={inputClass()}
         />
-      </label>
+      </div>
 
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-zinc-700 dark:text-zinc-300">Password</span>
-        <input
-          name="password"
-          type="password"
-          required
-          autoComplete="new-password"
-          value={password}
-          onChange={(event) => {
-            const nextPassword = event.target.value;
-            setPassword(nextPassword);
-            if (confirmPassword && nextPassword === confirmPassword) {
-              setPasswordError(null);
-            }
-          }}
-          className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-zinc-700 dark:text-zinc-300">Confirm password</span>
-        <input
-          name="confirm_password"
-          type="password"
-          required
-          autoComplete="new-password"
-          value={confirmPassword}
-          onChange={(event) => {
-            const nextConfirmPassword = event.target.value;
-            setConfirmPassword(nextConfirmPassword);
-            if (passwordError && password === nextConfirmPassword) {
-              setPasswordError(null);
-            }
-          }}
-          className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
-        />
-      </label>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelClass()} htmlFor="password">
+            Password
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            autoComplete="new-password"
+            value={password}
+            onChange={(event) => {
+              const nextPassword = event.target.value;
+              setPassword(nextPassword);
+              if (confirmPassword && nextPassword === confirmPassword) {
+                setPasswordError(null);
+              }
+            }}
+            className={inputClass()}
+          />
+        </div>
+        <div>
+          <label className={labelClass()} htmlFor="confirm_password">
+            Confirm
+          </label>
+          <input
+            id="confirm_password"
+            name="confirm_password"
+            type="password"
+            required
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(event) => {
+              const nextConfirmPassword = event.target.value;
+              setConfirmPassword(nextConfirmPassword);
+              if (passwordError && password === nextConfirmPassword) {
+                setPasswordError(null);
+              }
+            }}
+            className={inputClass({ invalid: !!passwordError })}
+          />
+        </div>
+      </div>
 
       {passwordError ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+        <div className="border-l-2 border-clay bg-clay/5 px-3 py-2 text-[12px] text-clay">
           {passwordError}
         </div>
       ) : null}
 
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-zinc-700 dark:text-zinc-300">Hobbies (comma-separated)</span>
+      <div>
+        <label className={labelClass()} htmlFor="hobbies">
+          Hobbies <span className="text-mute-soft normal-case tracking-normal">(comma-separated)</span>
+        </label>
         <input
+          id="hobbies"
           name="hobbies"
           placeholder="Coffee, Hiking, Board games"
-          className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+          className={inputClass()}
         />
-      </label>
+      </div>
 
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="text-zinc-700 dark:text-zinc-300">Bio</span>
+      <div>
+        <label className={labelClass()} htmlFor="biography">
+          A line or two about you
+        </label>
         <textarea
+          id="biography"
           name="biography"
           rows={3}
-          className="resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+          placeholder={"What you\u2019re into, how you spend weekends\u2026"}
+          className={textareaClass()}
         />
-      </label>
+      </div>
 
       <SubmitButton
-        pendingLabel="Creating account…"
-        className="h-11 rounded-2xl bg-[#0052FF] text-sm font-medium text-white shadow-sm transition hover:bg-[#0046DD]"
+        pendingLabel={"Creating account\u2026"}
+        className={buttonClass({ variant: "primary", size: "lg", full: true })}
       >
         Create account
       </SubmitButton>

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Avatar } from "@/components/Avatar";
 import { SubmitButton } from "@/components/SubmitButton";
+import { Chip, buttonClass } from "@/components/ui";
 import {
   disconnectConnectionAction,
   respondConnectionAction,
@@ -42,7 +43,9 @@ export default async function PersonProfilePage({
     .select("hobby_id")
     .eq("user_id", userId);
 
-  const myHobbyIds = new Set((myHobbies ?? []).map((h) => h.hobby_id as string));
+  const myHobbyIds = new Set(
+    (myHobbies ?? []).map((h) => h.hobby_id as string),
+  );
   const hobbyList = (hobbies ?? []).map((h) => {
     const raw = h.hobbies as unknown as
       | { name: string }
@@ -54,6 +57,8 @@ export default async function PersonProfilePage({
       shared: myHobbyIds.has(h.hobby_id as string),
     };
   });
+
+  const sharedCount = hobbyList.filter((h) => h.shared).length;
 
   const { data: connections } = await supabase
     .from("user_connections")
@@ -82,183 +87,260 @@ export default async function PersonProfilePage({
     .map((e) => e.event_id as string)
     .filter((eid) => myEventIds.has(eid));
 
-  let sharedEventNames: Array<{ id: string; title: string }> = [];
+  let sharedEventNames: Array<{ id: string; title: string; date_time: string }> = [];
   if (sharedEventIds.length > 0) {
     const { data: eventRows } = await supabase
       .from("events")
-      .select("id, title")
-      .in("id", sharedEventIds.slice(0, 5));
+      .select("id, title, date_time")
+      .in("id", sharedEventIds.slice(0, 8))
+      .order("date_time", { ascending: false });
     sharedEventNames = (eventRows ?? []).map((e) => ({
       id: e.id as string,
       title: e.title as string,
+      date_time: e.date_time as string,
     }));
   }
 
+  const firstName = person.first_name as string;
+  const lastName = person.last_name as string;
+  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const bio = person.biography as string | null;
+
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      <div className="flex flex-col gap-4 lg:col-span-2">
-        <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Avatar
-                src={(person.avatar_url as string | null) ?? null}
-                initials={`${(person.first_name as string).charAt(0)}${(person.last_name as string).charAt(0)}`}
-                size="lg"
-                className="font-semibold"
-              />
-              <div>
-                <h1 className="text-lg font-semibold">
-                  {person.first_name} {person.last_name}
-                </h1>
-                {hobbyList.filter((h) => h.shared).length > 0 && (
-                  <div className="text-xs text-emerald-600 dark:text-emerald-400">
-                    {hobbyList.filter((h) => h.shared).length} shared interest
-                    {hobbyList.filter((h) => h.shared).length !== 1 ? "s" : ""}
-                  </div>
-                )}
+    <div className="flex flex-col gap-6">
+      <div>
+        <Link
+          href="/people/find"
+          className="text-[11px] uppercase tracking-[0.14em] text-muted hover:text-ember-deep"
+        >
+          &larr; Back to Find people
+        </Link>
+      </div>
+
+      <header className="rounded-[16px] border border-border bg-surface p-6 md:p-8 grid gap-6 md:grid-cols-[auto_1fr] md:items-center">
+        <div className="relative">
+          <Avatar
+            src={(person.avatar_url as string | null) ?? null}
+            initials={initials}
+            size="xl"
+            shape="squircle"
+            className="h-24 w-24 text-2xl md:h-28 md:w-28 md:text-[32px]"
+          />
+          {sharedCount > 0 ? (
+            <div className="absolute -bottom-2 -right-2 rounded-[8px] border border-border bg-canvas px-2.5 py-1">
+              <div className="text-[10px] uppercase tracking-[0.14em] text-ember-deep leading-none">
+                In common
+              </div>
+              <div className="font-display text-[18px] font-medium text-ink leading-none mt-0.5">
+                {sharedCount}
               </div>
             </div>
-            <Link
-              href="/people/find"
-              className="text-sm text-zinc-500 hover:underline dark:text-zinc-400"
-            >
-              Back
-            </Link>
-          </div>
+          ) : null}
+        </div>
 
-          {(person.biography as string | null) && (
-            <p className="mt-4 text-sm text-zinc-700 dark:text-zinc-300">
-              {person.biography as string}
+        <div className="flex flex-col gap-2">
+          <h1 className="font-display text-[32px] md:text-[44px] leading-[1.02] font-medium tracking-tight text-ink">
+            {firstName} {lastName}
+          </h1>
+          {bio ? (
+            <p className="text-[15px] leading-[1.6] text-ink-soft max-w-2xl">
+              {bio}
+            </p>
+          ) : (
+            <p className="text-[14px] italic text-muted max-w-xl">
+              No bio yet &mdash; they&rsquo;re keeping it mysterious.
             </p>
           )}
+        </div>
+      </header>
 
-          {resolvedSearchParams?.error ? (
-            <div
-              className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300"
-              role="alert"
-            >
-              {resolvedSearchParams.error}
+      {resolvedSearchParams?.error ? (
+        <div
+          className="border-l-2 border-clay bg-clay/5 px-4 py-2.5 text-[13px] text-clay"
+          role="alert"
+        >
+          {resolvedSearchParams.error}
+        </div>
+      ) : null}
+
+      {!isSelf ? (
+        <section className="rounded-[14px] border border-border bg-surface px-5 py-4 flex flex-col gap-3">
+          {!conn || conn.status === "declined" ? (
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <div className="font-display text-[18px] text-ink">
+                  Want to stay in touch?
+                </div>
+                <div className="text-[13px] text-muted">
+                  {conn?.status === "declined"
+                    ? "The last request was declined. You can send a new one."
+                    : "Send a connection request — no big deal."}
+                </div>
+              </div>
+              <form
+                action={async () => {
+                  "use server";
+                  await sendConnectionAction(targetUserId);
+                }}
+              >
+                <SubmitButton
+                  pendingLabel="Sending…"
+                  className={buttonClass({ variant: "primary", size: "md" })}
+                >
+                  Connect
+                </SubmitButton>
+              </form>
             </div>
-          ) : null}
+          ) : conn.status === "pending" && !isRequester ? (
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <div className="font-display text-[18px] text-ink">
+                  {firstName} wants to connect
+                </div>
+                <div className="text-[13px] text-muted">
+                  Your call.
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <form
+                  action={async () => {
+                    "use server";
+                    await respondConnectionAction(conn.id as string, "declined");
+                  }}
+                >
+                  <SubmitButton
+                    pendingLabel="…"
+                    className={buttonClass({ variant: "ghost", size: "md" })}
+                  >
+                    Decline
+                  </SubmitButton>
+                </form>
+                <form
+                  action={async () => {
+                    "use server";
+                    await respondConnectionAction(conn.id as string, "accepted");
+                  }}
+                >
+                  <SubmitButton
+                    pendingLabel="Accepting…"
+                    className={buttonClass({ variant: "primary", size: "md" })}
+                  >
+                    Accept
+                  </SubmitButton>
+                </form>
+              </div>
+            </div>
+          ) : conn.status === "pending" && isRequester ? (
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <div className="font-display text-[18px] text-ink">
+                  Request sent
+                </div>
+                <div className="text-[13px] text-muted">
+                  Waiting for {firstName}.
+                </div>
+              </div>
+              <Chip tone="neutral" size="md">Pending</Chip>
+            </div>
+          ) : conn.status === "accepted" ? (
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <Chip tone="sage" size="md">Connected</Chip>
+                <span className="text-[13px] text-muted">
+                  You&rsquo;re teammates in Grupply.
+                </span>
+              </div>
+              <form
+                action={async () => {
+                  "use server";
+                  await disconnectConnectionAction(
+                    conn.id as string,
+                    targetUserId,
+                  );
+                }}
+              >
+                <SubmitButton
+                  pendingLabel="Disconnecting…"
+                  className={buttonClass({ variant: "ghost", size: "sm" })}
+                >
+                  Disconnect
+                </SubmitButton>
+              </form>
+            </div>
+          ) : (
+            <Chip tone="neutral" size="md">
+              {conn.status as string}
+            </Chip>
+          )}
+        </section>
+      ) : null}
 
-          {!isSelf && (
-            <div className="mt-5">
-              {!conn || conn.status === "declined" ? (
-                <div className="flex flex-col gap-2">
-                  {conn?.status === "declined" ? (
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      The last request was declined. You can send a new one.
-                    </p>
+      <div className="grid gap-6 md:grid-cols-[7fr_5fr]">
+        <section className="rounded-[14px] border border-border bg-surface p-6 flex flex-col gap-4">
+          <h2 className="text-[13px] uppercase tracking-[0.14em] text-muted font-medium">
+            Interests
+          </h2>
+          {hobbyList.length === 0 ? (
+            <div className="text-[14px] italic text-muted">
+              No hobbies listed yet.
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {hobbyList.map((h) => (
+                <Chip
+                  key={h.name}
+                  tone={h.shared ? "ember" : "neutral"}
+                  size="md"
+                >
+                  {h.shared ? (
+                    <span
+                      aria-hidden
+                      className="h-1.5 w-1.5 rounded-full bg-ember"
+                    />
                   ) : null}
-                  <form
-                    action={async () => {
-                      "use server";
-                      await sendConnectionAction(targetUserId);
-                    }}
-                  >
-                    <SubmitButton
-                      pendingLabel="Sending…"
-                      className="rounded-2xl bg-[#0052FF] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#0046DD]"
-                    >
-                      Send connection request
-                    </SubmitButton>
-                  </form>
-                </div>
-              ) : conn.status === "pending" && !isRequester ? (
-                <div className="flex gap-2">
-                  <form action={async () => { "use server"; await respondConnectionAction(conn.id as string, "accepted"); }}>
-                    <SubmitButton
-                      pendingLabel="Accepting…"
-                      className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-                    >
-                      Accept
-                    </SubmitButton>
-                  </form>
-                  <form action={async () => { "use server"; await respondConnectionAction(conn.id as string, "declined"); }}>
-                    <SubmitButton
-                      pendingLabel="Declining…"
-                      className="rounded-xl border border-zinc-200 px-4 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
-                    >
-                      Decline
-                    </SubmitButton>
-                  </form>
-                </div>
-              ) : conn.status === "pending" && isRequester ? (
-                <span className="inline-block rounded-xl border border-zinc-200 px-4 py-2 text-sm text-zinc-500 dark:border-zinc-800">
-                  Connection request pending
-                </span>
-              ) : conn.status === "accepted" ? (
-                <div className="flex flex-col gap-2">
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                    You are connected. You can disconnect at any time.
-                  </p>
-                  <form
-                    action={async () => {
-                      "use server";
-                      await disconnectConnectionAction(
-                        conn.id as string,
-                        targetUserId,
-                      );
-                    }}
-                  >
-                    <SubmitButton
-                      pendingLabel="Disconnecting…"
-                      className="h-11 rounded-2xl border border-zinc-200/90 px-4 text-sm font-medium text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                    >
-                      Disconnect
-                    </SubmitButton>
-                  </form>
-                </div>
-              ) : (
-                <span className="inline-block rounded-xl border border-zinc-200 px-4 py-2 text-sm text-zinc-500 dark:border-zinc-800">
-                  {conn.status as string}
-                </span>
-              )}
+                  {h.name}
+                </Chip>
+              ))}
             </div>
           )}
         </section>
 
-        {sharedEventNames.length > 0 && (
-          <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-            <h2 className="text-sm font-semibold">Shared events</h2>
-            <div className="mt-3 flex flex-col gap-2">
-              {sharedEventNames.map((e) => (
-                <Link
-                  key={e.id}
-                  href={`/events/${e.id}`}
-                  className="rounded-xl border border-zinc-100 px-3 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-900 dark:hover:bg-zinc-900"
-                >
-                  {e.title}
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
-
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="text-sm font-semibold">Interests</h2>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {hobbyList.length === 0 ? (
-            <div className="text-sm text-zinc-500 dark:text-zinc-400">
-              No hobbies listed.
+        <section className="rounded-[14px] border border-border bg-surface overflow-hidden flex flex-col">
+          <div className="px-5 py-3 border-b border-border">
+            <h2 className="text-[13px] uppercase tracking-[0.14em] text-muted font-medium">
+              Paths crossed
+            </h2>
+          </div>
+          {sharedEventNames.length === 0 ? (
+            <div className="px-5 py-5 text-[13px] italic text-muted">
+              You haven&rsquo;t been at the same event yet.
             </div>
           ) : (
-            hobbyList.map((h) => (
-              <span
-                key={h.name}
-                className={`rounded-full px-3 py-1 text-xs ${
-                  h.shared
-                    ? "bg-emerald-100 font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
-                }`}
-              >
-                {h.name}
-              </span>
-            ))
+            <ul className="flex flex-col">
+              {sharedEventNames.map((e, i) => (
+                <li
+                  key={e.id}
+                  className={`px-5 py-2.5 ${i === 0 ? "" : "border-t border-border"}`}
+                >
+                  <Link
+                    href={`/events/${e.id}`}
+                    className="flex items-center justify-between gap-3 text-[14px] text-ink hover:text-iris-deep"
+                  >
+                    <span>{e.title}</span>
+                    <span className="font-mono text-[11px] text-muted">
+                      {new Date(e.date_time).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "2-digit",
+                      })}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           )}
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }

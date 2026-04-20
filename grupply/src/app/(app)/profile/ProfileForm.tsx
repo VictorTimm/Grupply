@@ -2,6 +2,13 @@
 
 import { useState, useTransition } from "react";
 
+import {
+  buttonClass,
+  inputClass,
+  labelClass,
+  textareaClass,
+} from "@/components/ui";
+
 const MAX_HOBBY_LENGTH = 50;
 const MAX_HOBBIES = 20;
 type HobbyOption = {
@@ -94,167 +101,167 @@ export function ProfileForm({
   }
 
   return (
-    <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-      <h1 className="text-sm font-semibold">Edit profile</h1>
-      <form
-        className="mt-4 flex flex-col gap-4"
-        action={(fd) => {
-          fd.set("hobbies", Array.from(selectedHobbies).join(","));
-          setSaved(false);
-          startTransition(async () => {
-            await updateAction(fd);
-            setSaved(true);
-          });
-        }}
-      >
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-700 dark:text-zinc-300">First name</span>
+    <form
+      className="flex flex-col gap-6"
+      action={(fd) => {
+        fd.set("hobbies", Array.from(selectedHobbies).join(","));
+        setSaved(false);
+        startTransition(async () => {
+          await updateAction(fd);
+          setSaved(true);
+        });
+      }}
+    >
+      <section className="rounded-[14px] border border-border bg-surface p-6 flex flex-col gap-5">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[2fr_3fr] md:gap-6">
+          <label className="block">
+            <span className={labelClass()}>First name</span>
             <input
               name="first_name"
               required
               defaultValue={profile.first_name}
-              className="h-10 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+              className={inputClass()}
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-700 dark:text-zinc-300">Last name</span>
+          <label className="block">
+            <span className={labelClass()}>Last name</span>
             <input
               name="last_name"
               required
               defaultValue={profile.last_name}
-              className="h-10 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+              className={inputClass()}
             />
           </label>
         </div>
-
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-zinc-700 dark:text-zinc-300">Bio</span>
+        <label className="block">
+          <span className={labelClass()}>Bio</span>
           <textarea
             name="biography"
-            rows={3}
+            rows={4}
+            placeholder={"A few lines so teammates know who they\u2019re showing up for\u2026"}
             defaultValue={profile.biography}
-            className="resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+            className={textareaClass()}
           />
         </label>
+      </section>
 
-        <div className="flex flex-col gap-2">
-          <span className="text-sm text-zinc-700 dark:text-zinc-300">Hobbies</span>
-          <div className="flex flex-wrap gap-2">
-            {hobbyOptions.map((h) => {
-              const active = selectedHobbies.has(h.name);
-              const isDeleting = deletingHobbyIds.has(h.id);
-              return (
-                <span
-                  key={h.id}
-                  className="group relative"
+      <section className="rounded-[14px] border border-border bg-surface p-6 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-[13px] uppercase tracking-[0.14em] text-muted font-medium">
+            Hobbies
+          </h2>
+          <span className="font-mono text-[11px] text-muted">
+            {selectedHobbies.size}/{MAX_HOBBIES}
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {hobbyOptions.map((h) => {
+            const active = selectedHobbies.has(h.name);
+            const isDeleting = deletingHobbyIds.has(h.id);
+            return (
+              <span key={h.id} className="group relative">
+                <button
+                  type="button"
+                  onClick={() => toggleSelectedHobby(h.name)}
+                  disabled={isDeleting}
+                  className={`relative inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] transition ${
+                    active
+                      ? "border-ember bg-ember-wash text-ember-deep"
+                      : "border-border text-ink-soft hover:border-border-strong hover:bg-surface-sunk"
+                  } ${isDeleting ? "cursor-not-allowed opacity-60" : ""}`}
                 >
+                  {active ? (
+                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-ember" />
+                  ) : null}
+                  {h.name}
+                </button>
+                {active && h.isOwnedCustom ? (
                   <button
                     type="button"
-                    onClick={() => toggleSelectedHobby(h.name)}
+                    aria-label={`Delete ${h.name}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void deleteCustomHobby(h.id, h.name);
+                    }}
                     disabled={isDeleting}
-                    className={`rounded-full px-3 py-1 text-xs transition ${
-                      active
-                        ? "bg-zinc-950 text-white dark:bg-white dark:text-black"
-                        : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
-                    } ${isDeleting ? "cursor-not-allowed opacity-60" : ""}`}
+                    className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-ink text-[10px] leading-none text-surface opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-100"
                   >
-                    {h.name}
+                    {isDeleting ? "…" : "×"}
                   </button>
-                  {active && h.isOwnedCustom ? (
-                    <button
-                      type="button"
-                      aria-label={`Delete ${h.name}`}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void deleteCustomHobby(h.id, h.name);
-                      }}
-                      disabled={isDeleting}
-                      className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-600 text-[10px] leading-none text-white opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-100 dark:bg-zinc-400 dark:text-black"
-                    >
-                      {isDeleting ? "…" : "×"}
-                    </button>
-                  ) : null}
-                </span>
-              );
-            })}
-
-            {customHobbies.map((name) => (
-              <span
-                key={`custom-${name}`}
-                className="group relative"
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleSelectedHobby(name)}
-                  className="rounded-full bg-zinc-950 px-3 py-1 text-xs text-white transition dark:bg-white dark:text-black"
-                >
-                  {name}
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Delete ${name}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    removeUnsavedCustomHobby(name);
-                  }}
-                  className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-600 text-[10px] leading-none text-white opacity-0 transition-opacity group-hover:opacity-100 dark:bg-zinc-400 dark:text-black"
-                >
-                  ×
-                </button>
+                ) : null}
               </span>
-            ))}
-          </div>
+            );
+          })}
 
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addCustomHobby();
-                }
-              }}
-              placeholder="Add a custom hobby…"
-              maxLength={MAX_HOBBY_LENGTH}
-              className="h-9 flex-1 rounded-xl border border-zinc-200 bg-white px-3 text-sm outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
-            />
-            <button
-              type="button"
-              onClick={addCustomHobby}
-              disabled={
-                !customInput.trim() || selectedHobbies.size >= MAX_HOBBIES
-              }
-              className="h-9 rounded-xl border border-zinc-200 px-3 text-sm transition hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-800 dark:hover:bg-zinc-900"
-            >
-              Add
-            </button>
-          </div>
-
-          <div className="text-xs text-zinc-400 dark:text-zinc-500">
-            {selectedHobbies.size}/{MAX_HOBBIES} selected
-          </div>
+          {customHobbies.map((name) => (
+            <span key={`custom-${name}`} className="group relative">
+              <button
+                type="button"
+                onClick={() => toggleSelectedHobby(name)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-ember bg-ember-wash px-3.5 py-1.5 text-[13px] text-ember-deep"
+              >
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-ember" />
+                {name}
+              </button>
+              <button
+                type="button"
+                aria-label={`Delete ${name}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  removeUnsavedCustomHobby(name);
+                }}
+                className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-ink text-[10px] leading-none text-surface opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                ×
+              </button>
+            </span>
+          ))}
         </div>
 
-        <input type="hidden" name="hobbies" value="" />
-
-        <div className="flex items-center gap-3">
+        <div className="flex gap-2 pt-2">
+          <input
+            type="text"
+            value={customInput}
+            onChange={(e) => setCustomInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustomHobby();
+              }
+            }}
+            placeholder={"Add one that\u2019s missing\u2026"}
+            maxLength={MAX_HOBBY_LENGTH}
+            className={inputClass({ size: "sm", className: "flex-1" })}
+          />
           <button
-            type="submit"
-            disabled={pending}
-            className="h-10 rounded-xl bg-zinc-950 px-4 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            type="button"
+            onClick={addCustomHobby}
+            disabled={!customInput.trim() || selectedHobbies.size >= MAX_HOBBIES}
+            className={buttonClass({ variant: "secondary", size: "sm" })}
           >
-            {pending ? "Saving…" : "Save profile"}
+            Add
           </button>
-          {saved && (
-            <span className="text-sm text-emerald-600 dark:text-emerald-400">
-              Profile updated
-            </span>
+        </div>
+      </section>
+
+      <input type="hidden" name="hobbies" value="" />
+
+      <div className="sticky bottom-0 -mx-5 mt-4 flex items-center justify-between gap-4 border-t border-border bg-canvas/95 px-5 py-4 backdrop-blur md:-mx-8 md:px-8">
+        <div className="text-[13px] text-muted">
+          {saved ? (
+            <span className="text-sage">Saved &mdash; your profile is live.</span>
+          ) : (
+            "Changes save when you click."
           )}
         </div>
-      </form>
-    </section>
+        <button
+          type="submit"
+          disabled={pending}
+          className={buttonClass({ variant: "primary", size: "md" })}
+        >
+          {pending ? "Saving…" : "Save profile"}
+        </button>
+      </div>
+    </form>
   );
 }

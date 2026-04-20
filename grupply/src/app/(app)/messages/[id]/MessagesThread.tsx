@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -10,6 +10,21 @@ type MessageRow = {
   content: string;
   created_at: string;
 };
+
+function formatDayHeader(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) return "Today";
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 export function MessagesThread({
   conversationId,
@@ -83,57 +98,106 @@ export function MessagesThread({
     };
   }, [conversationId]);
 
+  const groups = useMemo(() => {
+    const out: Array<{ day: string; items: MessageRow[] }> = [];
+    for (const m of messages) {
+      const day = formatDayHeader(m.created_at);
+      const last = out[out.length - 1];
+      if (last && last.day === day) {
+        last.items.push(m);
+      } else {
+        out.push({ day, items: [m] });
+      }
+    }
+    return out;
+  }, [messages]);
+
   return (
-    <div className="flex flex-col gap-2">
-      {status !== "connected" && (
+    <div className="flex flex-col gap-5">
+      {status !== "connected" ? (
         <div
-          className={`rounded-lg px-3 py-1.5 text-xs ${
+          className={`self-center rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.14em] ${
             status === "error"
-              ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
-              : "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
+              ? "bg-clay/10 text-clay"
+              : "bg-ember-wash text-ember-deep"
           }`}
         >
-          {status === "error"
-            ? "Connection lost. Retrying…"
-            : "Reconnecting…"}
+          {status === "error" ? "Connection lost. Retrying…" : "Reconnecting…"}
         </div>
-      )}
+      ) : null}
+
       {messages.length === 0 ? (
-        <div className="py-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          No messages yet. Say hello!
+        <div className="py-12 text-center">
+          <p className="font-display text-[18px] text-ink">
+            {"No messages yet"}
+          </p>
+          <p className="mt-1 text-[13px] text-muted">
+            Kick things off with a quick hello.
+          </p>
         </div>
       ) : (
-        messages.map((m) => {
-          const isMine = m.sender_id === currentUserId;
-          return (
-            <div
-              key={m.id}
-              className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={`max-w-[75%] rounded-xl px-3 py-2 text-sm ${
-                  isMine
-                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950"
-                    : "border border-zinc-100 bg-white dark:border-zinc-800 dark:bg-zinc-900"
-                }`}
-              >
-                <div className="mt-0.5">{m.content}</div>
-                <div
-                  className={`mt-1 text-xs ${
-                    isMine
-                      ? "text-zinc-400 dark:text-zinc-500"
-                      : "text-zinc-400 dark:text-zinc-500"
-                  }`}
-                >
-                  {new Date(m.created_at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-              </div>
+        groups.map((g) => (
+          <div key={g.day} className="flex flex-col gap-2">
+            <div className="flex items-center gap-3 py-1">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-[10px] uppercase tracking-[0.18em] text-muted">
+                {g.day}
+              </span>
+              <div className="h-px flex-1 bg-border" />
             </div>
-          );
-        })
+
+            {g.items.map((m, i) => {
+              const isMine = m.sender_id === currentUserId;
+              const prev = g.items[i - 1];
+              const next = g.items[i + 1];
+              const prevMine = prev?.sender_id === m.sender_id;
+              const nextMine = next?.sender_id === m.sender_id;
+
+              const radius = isMine
+                ? [
+                    "rounded-tl-[14px]",
+                    "rounded-bl-[14px]",
+                    prevMine ? "rounded-tr-[4px]" : "rounded-tr-[14px]",
+                    nextMine ? "rounded-br-[4px]" : "rounded-br-[14px]",
+                  ].join(" ")
+                : [
+                    "rounded-tr-[14px]",
+                    "rounded-br-[14px]",
+                    prevMine === false && prev ? "rounded-tl-[4px]" : "rounded-tl-[14px]",
+                    nextMine === false && next ? "rounded-bl-[4px]" : "rounded-bl-[14px]",
+                  ].join(" ");
+
+              return (
+                <div
+                  key={m.id}
+                  className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[72%] px-3.5 py-2 text-[14px] leading-snug ${radius} ${
+                      isMine
+                        ? "bg-ink text-canvas"
+                        : "bg-surface-sunk text-ink border border-border"
+                    }`}
+                  >
+                    <div className="whitespace-pre-wrap break-words">
+                      {m.content}
+                    </div>
+                    <div
+                      className={`mt-1 text-[10px] uppercase tracking-[0.1em] ${
+                        isMine ? "text-canvas/60" : "text-muted"
+                      }`}
+                    >
+                      {new Date(m.created_at).toLocaleTimeString([], {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))
       )}
       <div ref={bottomRef} />
     </div>

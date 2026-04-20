@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { leaveEventAction } from "@/app/(app)/dashboard/actions";
 import { SubmitButton } from "@/components/SubmitButton";
+import { Chip, buttonClass } from "@/components/ui";
 
 type EventRow = {
   id: string;
@@ -15,6 +16,19 @@ type EventRow = {
   status: "active" | "canceled";
   creator_id: string;
 };
+
+function formatParts(iso: string) {
+  const d = new Date(iso);
+  return {
+    dow: d.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase(),
+    day: d.getDate(),
+    month: d.toLocaleDateString(undefined, { month: "short" }).toUpperCase(),
+    time: d.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    }),
+  };
+}
 
 export default async function JoinedEventsPage() {
   const supabase = await createSupabaseServerClient();
@@ -59,125 +73,171 @@ export default async function JoinedEventsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="flex flex-col gap-8">
+      <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h1 className="text-sm font-semibold">Your upcoming events</h1>
+          <h2 className="text-[13px] uppercase tracking-[0.14em] text-muted font-medium">
+            {upcoming.length === 0
+              ? "Upcoming"
+              : `Upcoming \u00b7 ${upcoming.length}`}
+          </h2>
           <Link
             href="/events/discover"
-            className="text-xs text-zinc-500 hover:underline dark:text-zinc-400"
+            className="text-[12px] text-muted hover:text-ember-deep"
           >
-            Discover more
+            Discover more &rarr;
           </Link>
         </div>
-        <div className="mt-3 flex flex-col gap-2">
-          {upcoming.length === 0 ? (
-            <div className="text-sm text-zinc-500 dark:text-zinc-400">
-              No upcoming events.{" "}
-              <Link href="/events/discover" className="font-medium hover:underline">
-                Discover events
-              </Link>
-            </div>
-          ) : (
-            upcoming.map((e) => {
+
+        {upcoming.length === 0 ? (
+          <div className="rounded-[12px] border border-border bg-surface px-4 py-4 text-[14px] text-muted">
+            No events on your calendar.{" "}
+            <Link href="/events/discover" className="text-ember-deep hover:underline">
+              Go find something
+            </Link>
+            .
+          </div>
+        ) : (
+          <ul className="flex flex-col rounded-[12px] border border-border bg-surface overflow-hidden">
+            {upcoming.map((e, i) => {
               const overlap = hasOverlap(e, upcoming);
+              const parts = formatParts(e.date_time);
               return (
-                <div
+                <li
                   key={e.id}
-                  className={`flex items-start justify-between gap-3 rounded-xl border px-4 py-3 ${
-                    overlap
-                      ? "border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20"
-                      : "border-zinc-100 dark:border-zinc-900"
+                  className={`flex items-start gap-5 px-4 py-4 ${
+                    i === 0 ? "" : "border-t border-border"
                   }`}
                 >
+                  <div
+                    className={`w-14 shrink-0 text-center ${
+                      overlap ? "text-ember-deep" : ""
+                    }`}
+                  >
+                    <div className="eyebrow text-ember-deep leading-none">
+                      {parts.dow}
+                    </div>
+                    <div className="font-display text-[22px] font-medium text-ink leading-tight mt-0.5">
+                      {parts.day}
+                    </div>
+                    <div className="font-mono text-[10px] text-muted mt-0.5">
+                      {parts.time}
+                    </div>
+                  </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Link
                         href={`/events/${e.id}`}
-                        className="text-sm font-medium hover:underline"
+                        className="text-[15px] font-medium text-ink hover:text-iris-deep"
                       >
                         {e.title}
                       </Link>
-                      {overlap && (
-                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                      {overlap ? (
+                        <Chip tone="ember" size="sm">
                           Overlap
-                        </span>
-                      )}
+                        </Chip>
+                      ) : null}
                     </div>
-                    <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    <div className="mt-0.5 text-[12px] text-muted">
+                      {e.location ? `${e.location} · ` : ""}
                       {new Date(e.date_time).toLocaleString()}
-                      {e.location ? ` · ${e.location}` : ""}
                     </div>
                   </div>
-                  <form action={async () => { "use server"; await leaveEventAction(e.id); }}>
+                  <form
+                    action={async () => {
+                      "use server";
+                      await leaveEventAction(e.id);
+                    }}
+                  >
                     <SubmitButton
-                      pendingLabel="Leaving…"
-                      className="shrink-0 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
+                      pendingLabel="…"
+                      className={buttonClass({ variant: "ghost", size: "sm" })}
                     >
                       Leave
                     </SubmitButton>
                   </form>
-                </div>
+                </li>
               );
-            })
-          )}
-        </div>
+            })}
+          </ul>
+        )}
       </section>
 
-      {past.length > 0 && (
-        <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-          <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-            Past events
-          </h2>
-          <div className="mt-3 flex flex-col gap-2 opacity-60">
-            {past.map((e) => (
-              <div
-                key={e.id}
-                className="flex items-start justify-between gap-3 rounded-xl border border-zinc-100 px-4 py-3 dark:border-zinc-900"
-              >
-                <div className="min-w-0">
-                  <Link
-                    href={`/events/${e.id}`}
-                    className="text-sm font-medium hover:underline"
-                  >
-                    {e.title}
-                  </Link>
-                  <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                    {new Date(e.date_time).toLocaleString()}
-                    {e.location ? ` · ${e.location}` : ""}
+      {past.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-[13px] uppercase tracking-[0.14em] text-muted font-medium">
+              Past
+            </h2>
+            <span className="font-mono text-[11px] text-mute-soft">
+              {past.length.toString().padStart(2, "0")}
+            </span>
+          </div>
+          <ul className="flex flex-col rounded-[12px] border border-border bg-surface overflow-hidden opacity-85">
+            {past.map((e, i) => {
+              const parts = formatParts(e.date_time);
+              return (
+                <li
+                  key={e.id}
+                  className={`flex items-start gap-5 px-4 py-3 ${
+                    i === 0 ? "" : "border-t border-border"
+                  }`}
+                >
+                  <div className="w-14 shrink-0 text-center">
+                    <div className="eyebrow leading-none">{parts.dow}</div>
+                    <div className="font-display text-[20px] font-medium text-ink-soft leading-tight mt-0.5">
+                      {parts.day}
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/events/${e.id}`}
+                      className="text-[14px] font-medium text-ink-soft hover:text-ink"
+                    >
+                      {e.title}
+                    </Link>
+                    <div className="mt-0.5 text-[12px] text-muted">
+                      {new Date(e.date_time).toLocaleDateString()}
+                      {e.location ? ` · ${e.location}` : ""}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </section>
-      )}
+      ) : null}
 
-      {canceled.length > 0 && (
-        <section className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
-          <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-            Canceled events
-          </h2>
-          <div className="mt-3 flex flex-col gap-2 opacity-60">
-            {canceled.map((e) => (
-              <div
-                key={e.id}
-                className="rounded-xl border border-zinc-100 px-4 py-3 dark:border-zinc-900"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium line-through">{e.title}</span>
-                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-                    Canceled
-                  </span>
-                </div>
-                <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                  {new Date(e.date_time).toLocaleString()}
-                </div>
-              </div>
-            ))}
+      {canceled.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-[13px] uppercase tracking-[0.14em] text-clay font-medium">
+              Canceled
+            </h2>
+            <span className="font-mono text-[11px] text-mute-soft">
+              {canceled.length.toString().padStart(2, "0")}
+            </span>
           </div>
+          <ul className="flex flex-col rounded-[12px] border border-border bg-surface overflow-hidden opacity-75">
+            {canceled.map((e, i) => (
+              <li
+                key={e.id}
+                className={`flex items-center gap-4 px-4 py-3 ${
+                  i === 0 ? "" : "border-t border-border"
+                }`}
+              >
+                <span className="text-[14px] font-medium text-ink line-through">
+                  {e.title}
+                </span>
+                <Chip tone="clay" size="sm">Canceled</Chip>
+                <span className="ml-auto font-mono text-[11px] text-muted">
+                  {new Date(e.date_time).toLocaleDateString()}
+                </span>
+              </li>
+            ))}
+          </ul>
         </section>
-      )}
+      ) : null}
     </div>
   );
 }

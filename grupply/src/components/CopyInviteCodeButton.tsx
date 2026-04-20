@@ -2,6 +2,8 @@
 
 import { useCallback, useState } from "react";
 
+import { buttonClass } from "@/components/ui";
+
 type CopyState = "idle" | "copied" | "error";
 
 export function CopyInviteCodeButton({ code }: { code: string }) {
@@ -19,13 +21,13 @@ export function CopyInviteCodeButton({ code }: { code: string }) {
   }, [code]);
 
   const label =
-    state === "copied" ? "Copied" : state === "error" ? "Copy failed — try again" : "Copy";
+    state === "copied" ? "Copied" : state === "error" ? "Try again" : "Copy";
 
   return (
     <button
       type="button"
       onClick={copy}
-      className="rounded-xl border border-zinc-200 px-3 py-1.5 text-xs font-medium hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
+      className={buttonClass({ variant: "secondary", size: "sm" })}
     >
       {label}
     </button>

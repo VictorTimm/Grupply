@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { buttonClass } from "@/components/ui";
 
 type ResendEmailButtonProps = {
   email: string;
@@ -32,7 +33,7 @@ export function ResendEmailButton({ email }: ResendEmailButtonProps) {
   }, [cooldownSeconds]);
 
   return (
-    <div className="flex flex-col gap-2 pt-2">
+    <div className="flex flex-col gap-3">
       <button
         type="button"
         disabled={pending || cooldownSeconds > 0}
@@ -53,26 +54,28 @@ export function ResendEmailButton({ email }: ResendEmailButtonProps) {
             }
 
             setCooldownSeconds(60);
-            setMessage("Verification email sent. You can request another in 60 seconds.");
+            setMessage(
+              "Verification email sent. You can request another in 60 seconds.",
+            );
           });
         }}
-        className="self-start rounded-xl border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-900"
+        className={buttonClass({ variant: "secondary", size: "md" })}
       >
         {pending
-          ? "Sending…"
+          ? "Sending\u2026"
           : cooldownSeconds > 0
-            ? `Sent — try again in ${cooldownSeconds}s`
+            ? `Sent \u2014 try again in ${cooldownSeconds}s`
             : "Resend verification email"}
       </button>
 
       {message ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
+        <div className="border-l-2 border-sage bg-sage/5 px-3 py-2 text-[12px] text-sage">
           {message}
         </div>
       ) : null}
 
       {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+        <div className="border-l-2 border-clay bg-clay/5 px-3 py-2 text-[12px] text-clay">
           {error}
         </div>
       ) : null}

@@ -30,7 +30,7 @@ export function NotificationsPanel({
     [items],
   );
 
-  const displayItems = showAll ? items : items.slice(0, 5);
+  const displayItems = showAll ? items : items.slice(0, 4);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -93,68 +93,79 @@ export function NotificationsPanel({
   }
 
   return (
-    <section className="rounded-[24px] bg-white p-6 shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:border dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-none lg:p-7">
-      <div className="flex items-center justify-between gap-2">
-        <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+    <section className="rounded-[14px] border border-border bg-surface overflow-hidden">
+      <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-border">
+        <h2 className="text-[13px] uppercase tracking-[0.14em] text-muted font-medium">
           Notifications
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          {unreadCount > 0 && (
+        </h2>
+        <div className="flex items-center gap-3">
+          {unreadCount > 0 ? (
             <button
               type="button"
               onClick={markAllRead}
               disabled={pending}
-              className="hover:text-[#0052FF] hover:underline disabled:opacity-50 dark:hover:text-[#5c8fff]"
+              className="text-[12px] text-muted hover:text-ember-deep disabled:opacity-50"
             >
               Mark all read
             </button>
-          )}
-          <span>{unreadCount} unread</span>
+          ) : null}
           <span
-            className={
+            className={`flex items-center gap-1.5 text-[11px] uppercase tracking-[0.14em] ${
               realtimeStatus === "connected"
-                ? "rounded-full bg-[#00D05A] px-3 py-1 text-xs font-semibold text-white shadow-sm"
+                ? "text-sage"
                 : realtimeStatus === "error"
-                  ? "rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-400"
-                  : "rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400"
-            }
+                  ? "text-clay"
+                  : "text-muted"
+            }`}
           >
+            <span
+              aria-hidden
+              className={`h-1.5 w-1.5 rounded-full ${
+                realtimeStatus === "connected"
+                  ? "bg-sage animate-pulse"
+                  : realtimeStatus === "error"
+                    ? "bg-clay"
+                    : "bg-mute-soft"
+              }`}
+            />
             {realtimeStatus === "connected"
               ? "Live"
               : realtimeStatus === "error"
                 ? "Offline"
-                : "Reconnecting…"}
+                : "Reconnecting"}
           </span>
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col gap-3">
+      <div className="flex flex-col">
         {items.length === 0 ? (
-          <div className="text-sm text-zinc-500 dark:text-zinc-400">
-            You&apos;re all caught up.
+          <div className="px-5 py-5 text-[14px] text-muted">
+            You&rsquo;re all caught up.
           </div>
         ) : (
           <>
-            {displayItems.map((n) => (
+            {displayItems.map((n, i) => (
               <div
                 key={n.id}
-                className={`flex items-start justify-between gap-3 rounded-2xl border px-4 py-3 ${
-                  n.read_at
-                    ? "border-zinc-100/80 dark:border-zinc-800/80"
-                    : "border-zinc-200/90 bg-zinc-50/80 dark:border-zinc-700 dark:bg-zinc-900/40"
+                className={`group flex items-start gap-3 px-5 py-3 ${
+                  i === 0 ? "" : "border-t border-border"
                 }`}
               >
-                <div className="min-w-0">
+                <span
+                  aria-hidden
+                  className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${
+                    n.read_at ? "bg-transparent" : "bg-ember"
+                  }`}
+                />
+                <div className="min-w-0 flex-1">
                   <div
-                    className={`text-sm ${
-                      n.read_at
-                        ? "text-zinc-500 dark:text-zinc-400"
-                        : "font-medium"
+                    className={`text-[14px] leading-relaxed ${
+                      n.read_at ? "text-muted" : "text-ink"
                     }`}
                   >
                     {n.message}
                   </div>
-                  <div className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
+                  <div className="mt-0.5 font-mono text-[11px] text-mute-soft">
                     {formatRelativeTime(n.created_at)}
                   </div>
                 </div>
@@ -176,7 +187,7 @@ export function NotificationsPanel({
                         );
                       });
                     }}
-                    className="shrink-0 rounded-xl border border-zinc-200/90 px-3 py-1.5 text-xs text-zinc-600 transition hover:bg-white disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    className="shrink-0 text-[11px] uppercase tracking-[0.14em] text-muted hover:text-ember-deep disabled:opacity-50"
                   >
                     Read
                   </button>
@@ -184,17 +195,17 @@ export function NotificationsPanel({
               </div>
             ))}
 
-            {items.length > 5 && (
+            {items.length > 4 ? (
               <button
                 type="button"
                 onClick={() => setShowAll(!showAll)}
-                className="text-xs text-zinc-500 hover:underline dark:text-zinc-400"
+                className="px-5 py-3 border-t border-border text-left text-[12px] uppercase tracking-[0.14em] text-muted hover:text-ember-deep"
               >
                 {showAll
                   ? "Show less"
-                  : `Show ${items.length - 5} more`}
+                  : `${items.length - 4} more ${items.length - 4 === 1 ? "thing" : "things"}`}
               </button>
-            )}
+            ) : null}
           </>
         )}
       </div>

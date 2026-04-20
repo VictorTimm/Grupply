@@ -107,33 +107,62 @@ export function GlobalSearch() {
   }, [q]);
 
   return (
-    <div ref={wrapperRef} className="relative w-full max-w-sm">
-      <input
-        value={q}
-        onChange={(e) => {
-          setQ(e.target.value);
-          setOpen(true);
-        }}
-        onFocus={() => setOpen(true)}
-        placeholder="Search events or people…"
-        className="h-11 w-full rounded-2xl border border-zinc-200/90 bg-white px-4 text-sm text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus:border-[#0052FF]"
-      />
+    <div ref={wrapperRef} className="relative w-full max-w-md">
+      <div className="flex items-center gap-2 border-b border-border-strong py-2 transition-colors focus-within:border-ink">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          aria-hidden
+          className="text-muted"
+        >
+          <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.4" />
+          <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+        </svg>
+        <input
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder="Search a teammate, a hobby, an event…"
+          className="w-full bg-transparent text-[14px] text-ink placeholder:text-mute-soft focus:outline-none"
+        />
+        {q ? (
+          <button
+            type="button"
+            onClick={() => {
+              setQ("");
+              setOpen(false);
+            }}
+            className="text-[11px] uppercase tracking-wider text-muted hover:text-ink"
+          >
+            Clear
+          </button>
+        ) : (
+          <span className="hidden text-[10px] uppercase tracking-[0.18em] text-mute-soft sm:inline">
+            ⌘K
+          </span>
+        )}
+      </div>
 
       {open && q.trim() ? (
-        <div className="absolute left-0 right-0 top-[3.25rem] z-40 max-h-96 overflow-y-auto rounded-[20px] border border-zinc-200/90 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:border-zinc-800 dark:bg-zinc-950">
-          <div className="p-3 text-xs text-zinc-500 dark:text-zinc-400">
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-40 max-h-96 overflow-y-auto rounded-[10px] border border-border bg-surface shadow-[var(--shadow-lift)]">
+          <div className="px-4 py-2.5 eyebrow">
             {loading
               ? "Searching…"
               : error
-                ? "Search failed. Try again."
+                ? "Search failed — try again"
                 : hasResults
                   ? "Results"
-                  : "No results found"}
+                  : "Nothing found"}
           </div>
 
           {events.length > 0 && (
-            <div className="border-t border-zinc-100 p-2 dark:border-zinc-900">
-              <div className="px-2 pb-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+            <div className="border-t border-border py-2">
+              <div className="px-4 pb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted">
                 Events
               </div>
               <div className="flex flex-col">
@@ -142,10 +171,10 @@ export function GlobalSearch() {
                     key={e.id}
                     href={`/events/${e.id}`}
                     onClick={() => setOpen(false)}
-                    className="rounded-xl px-2 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                    className="px-4 py-2 text-[13px] transition hover:bg-surface-sunk"
                   >
-                    <div className="font-medium">{e.title}</div>
-                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                    <div className="font-medium text-ink">{e.title}</div>
+                    <div className="text-[11px] text-muted">
                       {new Date(e.date_time).toLocaleString()}
                       {e.location ? ` · ${e.location}` : ""}
                     </div>
@@ -156,8 +185,8 @@ export function GlobalSearch() {
           )}
 
           {people.length > 0 && (
-            <div className="border-t border-zinc-100 p-2 dark:border-zinc-900">
-              <div className="px-2 pb-1 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+            <div className="border-t border-border py-2">
+              <div className="px-4 pb-1.5 text-[11px] uppercase tracking-[0.14em] text-muted">
                 People
               </div>
               <div className="flex flex-col">
@@ -166,14 +195,14 @@ export function GlobalSearch() {
                     key={p.user_id}
                     href={`/people/${p.user_id}`}
                     onClick={() => setOpen(false)}
-                    className="flex items-center gap-2 rounded-xl px-2 py-2 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                    className="flex items-center gap-3 px-4 py-2 text-[13px] transition hover:bg-surface-sunk"
                   >
                     <Avatar
                       src={p.avatar_url}
                       initials={`${p.first_name.charAt(0)}${p.last_name.charAt(0)}`}
                       size="sm"
                     />
-                    <div className="font-medium">
+                    <div className="font-medium text-ink">
                       {p.first_name} {p.last_name}
                     </div>
                   </Link>

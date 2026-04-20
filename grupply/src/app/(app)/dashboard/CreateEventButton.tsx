@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
+
+import { buttonClass, inputClass, labelClass, textareaClass } from "@/components/ui";
 
 import { createEventAction } from "./actions";
 
@@ -14,7 +17,15 @@ function getFocusableElements(container: HTMLElement | null) {
   );
 }
 
-export function CreateEventButton() {
+type CreateEventButtonProps = {
+  variant?: "primary" | "secondary";
+  label?: string;
+};
+
+export function CreateEventButton({
+  variant = "primary",
+  label = "Start something",
+}: CreateEventButtonProps = {}) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -75,14 +86,16 @@ export function CreateEventButton() {
         ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-2xl bg-[#0052FF] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#0046DD] dark:hover:bg-[#0046DD]"
+        className={buttonClass({ variant, size: "md" })}
       >
-        Create event
+        <span aria-hidden className="text-[15px] leading-none">+</span>
+        {label}
       </button>
 
-      {open ? (
+      {open && typeof document !== "undefined"
+        ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-ink/35 p-4"
           onClick={() => setOpen(false)}
         >
           <div
@@ -91,24 +104,30 @@ export function CreateEventButton() {
             aria-modal="true"
             aria-labelledby="create-event-title"
             tabIndex={-1}
-            className="w-full max-w-lg rounded-[24px] border border-zinc-200/80 bg-white p-7 shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:border-zinc-800 dark:bg-zinc-950"
+            className="my-auto w-full max-w-xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-[16px] border border-border bg-surface p-7 shadow-[var(--shadow-lift)] md:p-9"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center justify-between">
-              <div id="create-event-title" className="text-base font-semibold">
-                Create event
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="eyebrow text-ember-deep">New event</div>
+                <h2
+                  id="create-event-title"
+                  className="font-display text-[26px] font-medium tracking-tight text-ink mt-1.5"
+                >
+                  What are we gathering for?
+                </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900"
+                className="text-[11px] uppercase tracking-[0.14em] text-muted hover:text-ink"
               >
                 Close
               </button>
             </div>
 
             <form
-              className="mt-4 flex flex-col gap-3"
+              className="mt-7 flex flex-col gap-5"
               action={(formData) => {
                 setError(null);
                 startTransition(async () => {
@@ -121,73 +140,87 @@ export function CreateEventButton() {
                 });
               }}
             >
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-700 dark:text-zinc-300">Title</span>
+              <label className="block">
+                <span className={labelClass()}>Title</span>
                 <input
                   name="title"
                   required
-                  className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+                  placeholder="Friday climbing — Brooklyn Boulders"
+                  className={inputClass({ size: "lg" })}
                 />
               </label>
 
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-700 dark:text-zinc-300">Description</span>
+              <label className="block">
+                <span className={labelClass()}>Description</span>
                 <textarea
                   name="description"
                   rows={3}
-                  className="resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+                  placeholder="Tell the crew what to expect…"
+                  className={textareaClass()}
                 />
               </label>
 
-              <div className="grid grid-cols-2 gap-3">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-zinc-700 dark:text-zinc-300">Date & time</span>
+              <div className="grid grid-cols-[3fr_2fr] gap-4">
+                <label className="block">
+                  <span className={labelClass()}>When</span>
                   <input
                     name="date_time"
                     type="datetime-local"
                     required
-                    className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+                    className={inputClass()}
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-zinc-700 dark:text-zinc-300">Capacity</span>
+                <label className="block">
+                  <span className={labelClass()}>Seats</span>
                   <input
                     name="capacity"
                     type="number"
                     min={1}
                     defaultValue={10}
                     required
-                    className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+                    className={inputClass()}
                   />
                 </label>
               </div>
 
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="text-zinc-700 dark:text-zinc-300">Location</span>
+              <label className="block">
+                <span className={labelClass()}>Where</span>
                 <input
                   name="location"
-                  className="h-11 rounded-xl border border-zinc-200 bg-white px-3 outline-none transition focus:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:focus:border-zinc-700"
+                  placeholder="Office lobby, Park, Zoom…"
+                  className={inputClass()}
                 />
               </label>
 
               {error ? (
-                <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                <div className="border-l-2 border-clay bg-clay/5 px-4 py-2.5 text-[13px] text-clay">
                   {error}
                 </div>
               ) : null}
 
-              <button
-                type="submit"
-                disabled={pending}
-                className="mt-1 h-11 rounded-2xl bg-[#0052FF] text-sm font-medium text-white transition hover:bg-[#0046DD] disabled:opacity-50"
-              >
-                {pending ? "Creating…" : "Create"}
-              </button>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className={buttonClass({ variant: "ghost", size: "md" })}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className={buttonClass({ variant: "primary", size: "md" })}
+                >
+                  {pending ? "Creating…" : "Post it"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
-      ) : null}
+          ,
+          document.body,
+        )
+        : null}
     </>
   );
 }
-
