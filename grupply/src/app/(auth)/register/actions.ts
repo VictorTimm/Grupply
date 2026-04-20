@@ -72,6 +72,12 @@ export async function registerAction(formData: FormData) {
       code: signUpError.code ?? null,
       message: signUpError.message,
     });
+    logRegistrationEvent("info", "sign_up_failed_info", {
+      requestId,
+      flow: values.flow,
+      code: signUpError.code ?? null,
+      message: signUpError.message,
+    });
     redirect(registerErrorPath(mapSignUpErrorMessage(signUpError.message), values.flow));
   }
 
@@ -134,6 +140,16 @@ export async function registerAction(formData: FormData) {
       serviceRef: adminStatus.serviceRef,
       urlRef: adminStatus.urlRef,
     });
+    logRegistrationEvent("info", "admin_config_invalid_info", {
+      requestId,
+      flow: values.flow,
+      userId,
+      code: adminStatus.code,
+      message: adminStatus.message,
+      role: adminStatus.role,
+      serviceRef: adminStatus.serviceRef,
+      urlRef: adminStatus.urlRef,
+    });
     redirect(registerErrorPath(mapAdminConfigError(adminStatus), values.flow));
   }
 
@@ -154,6 +170,13 @@ export async function registerAction(formData: FormData) {
   } catch (provisioningError) {
     const error = provisioningError as { code?: string | null; message: string };
     logRegistrationEvent("error", "provisioning_failed", {
+      requestId,
+      flow: values.flow,
+      userId,
+      code: error.code ?? null,
+      message: error.message,
+    });
+    logRegistrationEvent("info", "provisioning_failed_info", {
       requestId,
       flow: values.flow,
       userId,
