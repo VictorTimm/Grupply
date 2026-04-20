@@ -81,6 +81,8 @@ export function mapProvisioningError(error: SupabaseLikeError) {
   const message = error.message ?? "";
   const lower = message.toLowerCase();
   const code = error.code ?? "";
+  const debugCode = code || "none";
+  const debugMessage = message.replace(/\s+/g, " ").trim().slice(0, 120) || "none";
 
   if (
     code === "PGRST202" ||
@@ -113,7 +115,7 @@ export function mapProvisioningError(error: SupabaseLikeError) {
     return "Signup could not finish because the server admin connection to Supabase is invalid. Re-check SUPABASE_SERVICE_ROLE_KEY and restart the dev server.";
   }
 
-  return "We created the auth user, but could not finish organization setup. Check the server logs for the failing provisioning step, then either recover or delete the partial user before retrying.";
+  return `We created the auth user, but could not finish organization setup. Debug code: ${debugCode}. Debug message: ${debugMessage}.`;
 }
 
 export function registrationRecoveryPath(flow: RegisterFlowMode) {
