@@ -57,13 +57,30 @@ export async function registerAction(formData: FormData) {
     hobbyCount: values.hobbyNames.length,
   });
 
-  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-    email: values.email,
-    password: values.password,
-    options: {
-      emailRedirectTo: verifyRedirectUrl.toString(),
-    },
-  });
+  let signUpData: Awaited<ReturnType<typeof supabase.auth.signUp>>["data"];
+  let signUpError: Awaited<ReturnType<typeof supabase.auth.signUp>>["error"];
+  try {
+    ({ data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: values.email,
+      password: values.password,
+      options: {
+        emailRedirectTo: verifyRedirectUrl.toString(),
+      },
+    }));
+  } catch (unexpectedSignUpError) {
+    const err = unexpectedSignUpError as { message?: string };
+    logRegistrationEvent("error", "sign_up_threw", {
+      requestId,
+      flow: values.flow,
+      message: err.message ?? "unknown",
+    });
+    logRegistrationEvent("info", "sign_up_threw_info", {
+      requestId,
+      flow: values.flow,
+      message: err.message ?? "unknown",
+    });
+    throw unexpectedSignUpError;
+  }
 
   if (signUpError) {
     logRegistrationEvent("error", "sign_up_failed", {
