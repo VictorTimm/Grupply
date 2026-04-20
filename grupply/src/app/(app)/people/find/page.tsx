@@ -94,18 +94,12 @@ export default async function FindPeoplePage({
               <p>No other members in your organization yet.</p>
               {(profilesInThisOrg ?? 0) <= 1 ? (
                 <p className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                  The database only has one profile linked to your organization id, so teammates are
-                  not in the same tenant yet. Open{" "}
+                  Share your organization invite code from{" "}
                   <Link href="/settings" className="font-medium text-zinc-950 underline dark:text-zinc-50">
                     Settings
                   </Link>{" "}
-                  and compare the Organization id with your colleague: it must match exactly. If it
-                  does not, run{" "}
-                  <code className="rounded bg-zinc-100 px-1 py-0.5 text-[11px] dark:bg-zinc-900">
-                    supabase/sql/move_user_to_organization.sql
-                  </code>{" "}
-                  in the Supabase SQL editor (postgres role), or ask them to sign up with your
-                  company join code.
+                  so teammates can join the same company space. Once they register with that invite
+                  code, they will appear here automatically.
                 </p>
               ) : null}
             </div>

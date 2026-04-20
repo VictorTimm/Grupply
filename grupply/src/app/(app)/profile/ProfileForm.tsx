@@ -4,11 +4,17 @@ import { useState, useTransition } from "react";
 
 const MAX_HOBBY_LENGTH = 50;
 const MAX_HOBBIES = 20;
+type HobbyOption = {
+  id: string;
+  name: string;
+  isOwnedCustom: boolean;
+};
 
 export function ProfileForm({
   profile,
   allHobbies,
   updateAction,
+  deleteCustomHobbyAction,
 }: {
   profile: {
     first_name: string;
@@ -16,8 +22,9 @@ export function ProfileForm({
     biography: string;
     current_hobbies: string[];
   };
-  allHobbies: Array<{ id: string; name: string }>;
+  allHobbies: HobbyOption[];
   updateAction: (formData: FormData) => Promise<void>;
+  deleteCustomHobbyAction: (hobbyId: string) => Promise<void>;
 }) {
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
@@ -25,18 +32,65 @@ export function ProfileForm({
     new Set(profile.current_hobbies),
   );
   const [customInput, setCustomInput] = useState("");
+  const [hobbyOptions, setHobbyOptions] = useState(allHobbies);
+  const [deletingHobbyIds, setDeletingHobbyIds] = useState<Set<string>>(
+    new Set(),
+  );
 
-  const catalogNames = new Set(allHobbies.map((h) => h.name));
+  const catalogNames = new Set(hobbyOptions.map((h) => h.name));
   const customHobbies = Array.from(selectedHobbies).filter(
     (name) => !catalogNames.has(name),
   );
+
+  function toggleSelectedHobby(name: string) {
+    setSaved(false);
+    setSelectedHobbies((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else if (next.size < MAX_HOBBIES) next.add(name);
+      return next;
+    });
+  }
 
   function addCustomHobby() {
     const name = customInput.trim().slice(0, MAX_HOBBY_LENGTH);
     if (!name) return;
     if (selectedHobbies.size >= MAX_HOBBIES) return;
+    setSaved(false);
     setSelectedHobbies((prev) => new Set(prev).add(name));
     setCustomInput("");
+  }
+
+  function removeUnsavedCustomHobby(name: string) {
+    setSaved(false);
+    setSelectedHobbies((prev) => {
+      const next = new Set(prev);
+      next.delete(name);
+      return next;
+    });
+  }
+
+  async function deleteCustomHobby(hobbyId: string, hobbyName: string) {
+    if (deletingHobbyIds.has(hobbyId)) return;
+
+    setSaved(false);
+    setDeletingHobbyIds((prev) => new Set(prev).add(hobbyId));
+
+    try {
+      await deleteCustomHobbyAction(hobbyId);
+      setSelectedHobbies((prev) => {
+        const next = new Set(prev);
+        next.delete(hobbyName);
+        return next;
+      });
+      setHobbyOptions((prev) => prev.filter((hobby) => hobby.id !== hobbyId));
+    } finally {
+      setDeletingHobbyIds((prev) => {
+        const next = new Set(prev);
+        next.delete(hobbyId);
+        return next;
+      });
+    }
   }
 
   return (
@@ -87,46 +141,68 @@ export function ProfileForm({
         <div className="flex flex-col gap-2">
           <span className="text-sm text-zinc-700 dark:text-zinc-300">Hobbies</span>
           <div className="flex flex-wrap gap-2">
-            {allHobbies.map((h) => {
+            {hobbyOptions.map((h) => {
               const active = selectedHobbies.has(h.name);
+              const isDeleting = deletingHobbyIds.has(h.id);
               return (
-                <button
+                <span
                   key={h.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedHobbies((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(h.name)) next.delete(h.name);
-                      else if (next.size < MAX_HOBBIES) next.add(h.name);
-                      return next;
-                    });
-                  }}
-                  className={`rounded-full px-3 py-1 text-xs transition ${
-                    active
-                      ? "bg-zinc-950 text-white dark:bg-white dark:text-black"
-                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
-                  }`}
+                  className="group relative"
                 >
-                  {h.name}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleSelectedHobby(h.name)}
+                    disabled={isDeleting}
+                    className={`rounded-full px-3 py-1 text-xs transition ${
+                      active
+                        ? "bg-zinc-950 text-white dark:bg-white dark:text-black"
+                        : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                    } ${isDeleting ? "cursor-not-allowed opacity-60" : ""}`}
+                  >
+                    {h.name}
+                  </button>
+                  {active && h.isOwnedCustom ? (
+                    <button
+                      type="button"
+                      aria-label={`Delete ${h.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void deleteCustomHobby(h.id, h.name);
+                      }}
+                      disabled={isDeleting}
+                      className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-600 text-[10px] leading-none text-white opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-100 dark:bg-zinc-400 dark:text-black"
+                    >
+                      {isDeleting ? "…" : "×"}
+                    </button>
+                  ) : null}
+                </span>
               );
             })}
 
             {customHobbies.map((name) => (
-              <button
+              <span
                 key={`custom-${name}`}
-                type="button"
-                onClick={() => {
-                  setSelectedHobbies((prev) => {
-                    const next = new Set(prev);
-                    next.delete(name);
-                    return next;
-                  });
-                }}
-                className="rounded-full bg-zinc-950 px-3 py-1 text-xs text-white transition dark:bg-white dark:text-black"
+                className="group relative"
               >
-                {name} &times;
-              </button>
+                <button
+                  type="button"
+                  onClick={() => toggleSelectedHobby(name)}
+                  className="rounded-full bg-zinc-950 px-3 py-1 text-xs text-white transition dark:bg-white dark:text-black"
+                >
+                  {name}
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Delete ${name}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    removeUnsavedCustomHobby(name);
+                  }}
+                  className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-600 text-[10px] leading-none text-white opacity-0 transition-opacity group-hover:opacity-100 dark:bg-zinc-400 dark:text-black"
+                >
+                  ×
+                </button>
+              </span>
             ))}
           </div>
 

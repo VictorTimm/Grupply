@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { leaveEventAction } from "@/app/(app)/dashboard/actions";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type EventRow = {
   id: string;
@@ -109,12 +110,12 @@ export default async function JoinedEventsPage() {
                     </div>
                   </div>
                   <form action={async () => { "use server"; await leaveEventAction(e.id); }}>
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingLabel="Leaving…"
                       className="shrink-0 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
                     >
                       Leave
-                    </button>
+                    </SubmitButton>
                   </form>
                 </div>
               );

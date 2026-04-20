@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { registrationRecoveryPath } from "@/lib/auth/register";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Avatar } from "@/components/Avatar";
+import { SubmitButton } from "@/components/SubmitButton";
 
 import { joinEventAction, leaveEventAction } from "./actions";
 import { NotificationsPanel } from "./NotificationsPanel";
@@ -133,12 +134,12 @@ export default async function DashboardPage() {
                   </div>
                 </div>
                 <form action={async () => { "use server"; await leaveEventAction(e.id); }}>
-                  <button
-                    type="submit"
+                  <SubmitButton
+                    pendingLabel="Leaving…"
                     className="shrink-0 rounded-xl border border-zinc-200/90 px-3 py-1.5 text-xs text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
                   >
                     Leave
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             ))
@@ -182,12 +183,12 @@ export default async function DashboardPage() {
                   </div>
                 </div>
                 <form action={async () => { "use server"; await joinEventAction(e.id); }}>
-                  <button
-                    type="submit"
+                  <SubmitButton
+                    pendingLabel="Joining…"
                     className="shrink-0 rounded-xl bg-[#0052FF] px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-[#0046DD]"
                   >
                     Join
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             ))

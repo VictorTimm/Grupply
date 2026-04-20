@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { joinEventAction } from "@/app/(app)/dashboard/actions";
+import { SubmitButton } from "@/components/SubmitButton";
 
 type EventRow = {
   id: string;
@@ -113,12 +114,12 @@ export default async function DiscoverEventsPage() {
         </div>
         {!isJoined && !isCanceled && !isPast && !isFull && (
           <form action={async () => { "use server"; await joinEventAction(e.id); }}>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingLabel="Joining…"
               className="shrink-0 rounded-lg bg-zinc-950 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
             >
               Join
-            </button>
+            </SubmitButton>
           </form>
         )}
       </div>

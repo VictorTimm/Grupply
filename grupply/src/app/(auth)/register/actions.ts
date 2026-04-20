@@ -19,6 +19,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export async function registerAction(formData: FormData) {
   const requestId = crypto.randomUUID();
   const values = parseRegisterForm(formData);
+  const confirmPassword = String(formData.get("confirm_password") ?? "");
+
+  if (values.password !== confirmPassword) {
+    redirect(registerErrorPath("Passwords do not match.", values.flow));
+  }
 
   if (values.joinCode && values.organizationName) {
     redirect(
@@ -130,5 +135,5 @@ export async function registerAction(formData: FormData) {
     redirect("/dashboard");
   }
 
-  redirect("/verify");
+  redirect(`/verify?email=${encodeURIComponent(values.email)}`);
 }

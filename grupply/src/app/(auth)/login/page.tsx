@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { SubmitButton } from "@/components/SubmitButton";
+
 import { loginAction } from "./actions";
 
 export default async function LoginPage({
@@ -64,12 +66,12 @@ export default async function LoginPage({
           />
         </label>
 
-        <button
-          type="submit"
+        <SubmitButton
+          pendingLabel="Signing in…"
           className="h-11 rounded-2xl bg-[#0052FF] text-sm font-medium text-white shadow-sm transition hover:bg-[#0046DD]"
         >
           Continue
-        </button>
+        </SubmitButton>
       </form>
 
       <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-400">

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Avatar } from "@/components/Avatar";
 
-import { updateProfileAction } from "./actions";
+import { deleteCustomHobbyAction, updateProfileAction } from "./actions";
 import { ProfileForm } from "./ProfileForm";
 import { ProfileAvatarUploader } from "./ProfileAvatarUploader";
 
@@ -35,7 +35,8 @@ export default async function ProfilePage() {
 
   const { data: allHobbies } = await supabase
     .from("hobbies")
-    .select("id, name")
+    .select("id, name, created_by")
+    .or(`created_by.is.null,created_by.eq.${userId}`)
     .order("name", { ascending: true });
 
   const initials = `${(profile.first_name as string).charAt(0)}${(profile.last_name as string).charAt(0)}`;
@@ -62,7 +63,9 @@ export default async function ProfilePage() {
           allHobbies={(allHobbies ?? []).map((h) => ({
             id: h.id as string,
             name: h.name as string,
+            isOwnedCustom: (h.created_by as string | null) === userId,
           }))}
+          deleteCustomHobbyAction={deleteCustomHobbyAction}
           updateAction={updateProfileAction}
         />
       </div>

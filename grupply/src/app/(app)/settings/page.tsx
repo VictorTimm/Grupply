@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { ConfirmActionForm } from "@/components/ConfirmActionForm";
 import { CopyInviteCodeButton } from "@/components/CopyInviteCodeButton";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -79,12 +80,8 @@ export default async function SettingsPage({
                     {organizationId}
                   </div>
                   <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-                    Find People and search only show users whose account uses this exact id. If a
-                    teammate sees a different value here, run{" "}
-                    <code className="rounded bg-zinc-100 px-1 py-0.5 text-[11px] dark:bg-zinc-900">
-                      supabase/sql/move_user_to_organization.sql
-                    </code>{" "}
-                    in the Supabase SQL Editor (as postgres), or register with an invite code.
+                    Teammates only appear in search and People when they join the same organization.
+                    Share your invite code so they sign up in the right company space.
                   </p>
 
                   <div className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-900">
@@ -100,14 +97,15 @@ export default async function SettingsPage({
                           <div className="flex flex-wrap items-center gap-2">
                             <CopyInviteCodeButton code={joinCode} />
                             {canRotateInvite ? (
-                              <form action={rotateOrganizationJoinCodeAction} className="inline">
-                                <button
-                                  type="submit"
-                                  className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-950/60"
-                                >
-                                  Rotate code
-                                </button>
-                              </form>
+                              <ConfirmActionForm
+                                action={rotateOrganizationJoinCodeAction}
+                                initialLabel="Rotate code"
+                                confirmLabel="Click again to rotate"
+                                pendingLabel="Rotating…"
+                                className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-950/60"
+                                confirmClassName="rounded-xl border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-950 hover:bg-amber-200 dark:border-amber-800 dark:bg-amber-900/60 dark:text-amber-100 dark:hover:bg-amber-900/80"
+                                formClassName="inline"
+                              />
                             ) : null}
                           </div>
                           {canRotateInvite ? (
@@ -122,13 +120,26 @@ export default async function SettingsPage({
                           )}
                         </>
                       ) : (
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                          No invite code on file. Apply database migration{" "}
-                          <code className="rounded bg-zinc-100 px-1 py-0.5 text-[11px] dark:bg-zinc-900">
-                            0017_organization_join_code_auto.sql
-                          </code>{" "}
-                          or set one manually in Supabase.
-                        </p>
+                        <div className="space-y-2">
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            No invite code is available yet.
+                          </p>
+                          {canRotateInvite ? (
+                            <ConfirmActionForm
+                              action={rotateOrganizationJoinCodeAction}
+                              initialLabel="Generate code"
+                              confirmLabel="Click again to generate"
+                              pendingLabel="Generating…"
+                              className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-950/60"
+                              confirmClassName="rounded-xl border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-950 hover:bg-amber-200 dark:border-amber-800 dark:bg-amber-900/60 dark:text-amber-100 dark:hover:bg-amber-900/80"
+                              formClassName="inline"
+                            />
+                          ) : (
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                              Ask an owner or admin to generate a new invite code.
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -194,14 +205,17 @@ export default async function SettingsPage({
           Permanently delete your profile, memberships, event attendance, connections, messages, and
           notifications. Your auth account may still exist until an admin deletes it.
         </p>
-        <form action={deleteMyDataAction} className="mt-3">
-          <button
-            type="submit"
+        <div className="mt-3">
+          <ConfirmActionForm
+            action={deleteMyDataAction}
+            initialLabel="Delete my data"
+            confirmLabel="Click again to delete"
+            pendingLabel="Deleting…"
             className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-          >
-            Delete my data
-          </button>
-        </form>
+            confirmClassName="rounded-xl bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800"
+            formClassName="inline"
+          />
+        </div>
       </section>
     </div>
   );

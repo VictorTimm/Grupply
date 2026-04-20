@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Avatar } from "@/components/Avatar";
 import { joinEventAction, leaveEventAction } from "@/app/(app)/dashboard/actions";
+import { ConfirmActionForm } from "@/components/ConfirmActionForm";
+import { SubmitButton } from "@/components/SubmitButton";
 
 import { updateEventAction, cancelEventAction, deleteEventAction } from "./actions";
 import { EventEditForm } from "./EventEditForm";
@@ -139,21 +141,21 @@ export default async function EventDetailPage({
             <div className="mt-5 flex gap-2">
               {isAttending ? (
                 <form action={async () => { "use server"; await leaveEventAction(id); }}>
-                  <button
-                    type="submit"
+                  <SubmitButton
+                    pendingLabel="Leaving…"
                     className="rounded-xl border border-zinc-200 px-4 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
                   >
                     Leave event
-                  </button>
+                  </SubmitButton>
                 </form>
               ) : !isFull ? (
                 <form action={async () => { "use server"; await joinEventAction(id); }}>
-                  <button
-                    type="submit"
+                  <SubmitButton
+                    pendingLabel="Joining…"
                     className="rounded-xl bg-zinc-950 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                   >
                     Join event
-                  </button>
+                  </SubmitButton>
                 </form>
               ) : (
                 <span className="rounded-xl border border-zinc-200 px-4 py-2 text-sm text-zinc-400 dark:border-zinc-800">
@@ -175,23 +177,31 @@ export default async function EventDetailPage({
             </h2>
             <div className="mt-3 flex gap-2">
               {!isCanceled && (
-                <form action={async () => { "use server"; await cancelEventAction(id); }}>
-                  <button
-                    type="submit"
-                    className="rounded-xl border border-red-200 px-4 py-2 text-sm text-red-700 hover:bg-red-50 dark:border-red-900/50 dark:text-red-300 dark:hover:bg-red-950/30"
-                  >
-                    Cancel event
-                  </button>
-                </form>
+                <ConfirmActionForm
+                  action={async () => {
+                    "use server";
+                    await cancelEventAction(id);
+                  }}
+                  initialLabel="Cancel event"
+                  confirmLabel="Click again to cancel"
+                  pendingLabel="Canceling…"
+                  className="rounded-xl border border-red-200 px-4 py-2 text-sm text-red-700 hover:bg-red-50 dark:border-red-900/50 dark:text-red-300 dark:hover:bg-red-950/30"
+                  confirmClassName="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-800 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200 dark:hover:bg-red-950/60"
+                  formClassName="inline"
+                />
               )}
-              <form action={async () => { "use server"; await deleteEventAction(id); }}>
-                <button
-                  type="submit"
-                  className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
-                >
-                  Delete event
-                </button>
-              </form>
+              <ConfirmActionForm
+                action={async () => {
+                  "use server";
+                  await deleteEventAction(id);
+                }}
+                initialLabel="Delete event"
+                confirmLabel="Click again to delete"
+                pendingLabel="Deleting…"
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                confirmClassName="rounded-xl bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800"
+                formClassName="inline"
+              />
             </div>
           </section>
         )}

@@ -120,7 +120,7 @@ export function GlobalSearch() {
       />
 
       {open && q.trim() ? (
-        <div className="absolute left-0 right-0 top-[3.25rem] z-40 overflow-hidden rounded-[20px] border border-zinc-200/90 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="absolute left-0 right-0 top-[3.25rem] z-40 max-h-96 overflow-y-auto rounded-[20px] border border-zinc-200/90 bg-white shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:border-zinc-800 dark:bg-zinc-950">
           <div className="p-3 text-xs text-zinc-500 dark:text-zinc-400">
             {loading
               ? "Searching…"

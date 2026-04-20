@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Avatar } from "@/components/Avatar";
+import { SubmitButton } from "@/components/SubmitButton";
 import {
   disconnectConnectionAction,
   respondConnectionAction,
@@ -155,31 +156,31 @@ export default async function PersonProfilePage({
                       await sendConnectionAction(targetUserId);
                     }}
                   >
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingLabel="Sending…"
                       className="rounded-2xl bg-[#0052FF] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#0046DD]"
                     >
                       Send connection request
-                    </button>
+                    </SubmitButton>
                   </form>
                 </div>
               ) : conn.status === "pending" && !isRequester ? (
                 <div className="flex gap-2">
                   <form action={async () => { "use server"; await respondConnectionAction(conn.id as string, "accepted"); }}>
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingLabel="Accepting…"
                       className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
                     >
                       Accept
-                    </button>
+                    </SubmitButton>
                   </form>
                   <form action={async () => { "use server"; await respondConnectionAction(conn.id as string, "declined"); }}>
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingLabel="Declining…"
                       className="rounded-xl border border-zinc-200 px-4 py-2 text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
                     >
                       Decline
-                    </button>
+                    </SubmitButton>
                   </form>
                 </div>
               ) : conn.status === "pending" && isRequester ? (
@@ -200,12 +201,12 @@ export default async function PersonProfilePage({
                       );
                     }}
                   >
-                    <button
-                      type="submit"
-                      className="h-11 rounded-2xl bg-[#0052FF] px-4 text-sm font-medium text-white shadow-sm transition hover:bg-[#0046DD]"
+                    <SubmitButton
+                      pendingLabel="Disconnecting…"
+                      className="h-11 rounded-2xl border border-zinc-200/90 px-4 text-sm font-medium text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
                     >
                       Disconnect
-                    </button>
+                    </SubmitButton>
                   </form>
                 </div>
               ) : (

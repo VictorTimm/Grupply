@@ -105,6 +105,7 @@ describe("registerAction", () => {
           _flow: "new",
           email: "owner@example.com",
           password: "password123",
+          confirm_password: "password123",
           first_name: "Ada",
           last_name: "Lovelace",
           organization_name: "Analytical Engine",
@@ -114,7 +115,7 @@ describe("registerAction", () => {
       ),
     );
 
-    expect(destination).toBe("/verify");
+    expect(destination).toBe("/verify?email=owner%40example.com");
     expect(mocks.provisionRegistration).toHaveBeenCalledWith({
       admin: expect.any(Object),
       requestId: expect.any(String),
@@ -145,6 +146,7 @@ describe("registerAction", () => {
         buildFormData({
           email: "member@example.com",
           password: "password123",
+          confirm_password: "password123",
           first_name: "Grace",
           last_name: "Hopper",
           join_code: "invite-123",
@@ -185,6 +187,7 @@ describe("registerAction", () => {
         buildFormData({
           email: "member@example.com",
           password: "password123",
+          confirm_password: "password123",
           first_name: "Grace",
           last_name: "Hopper",
           join_code: "invite-123",
@@ -208,6 +211,7 @@ describe("registerAction", () => {
         buildFormData({
           email: "member@example.com",
           password: "password123",
+          confirm_password: "password123",
           first_name: "Grace",
           last_name: "Hopper",
           join_code: "invite-123",
@@ -231,6 +235,7 @@ describe("registerAction", () => {
         buildFormData({
           email: "member@example.com",
           password: "password123",
+          confirm_password: "password123",
           first_name: "Grace",
           last_name: "Hopper",
           join_code: "invite-123",

@@ -11,6 +11,15 @@ type EventData = {
   capacity: number;
 };
 
+function toLocalDatetimeString(iso: string) {
+  const date = new Date(iso);
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+    date.getHours(),
+  )}:${pad(date.getMinutes())}`;
+}
+
 export function EventEditForm({
   event,
   updateAction,
@@ -36,7 +45,7 @@ export function EventEditForm({
   }
 
   const dtLocal = event.date_time
-    ? new Date(event.date_time).toISOString().slice(0, 16)
+    ? toLocalDatetimeString(event.date_time)
     : "";
 
   return (

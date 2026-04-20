@@ -1,17 +1,78 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import { createEventAction } from "./actions";
+
+function getFocusableElements(container: HTMLElement | null) {
+  if (!container) return [];
+
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  );
+}
 
 export function CreateEventButton() {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const wasOpenRef = useRef(false);
+
+  useEffect(() => {
+    if (!open) {
+      if (wasOpenRef.current) {
+        triggerRef.current?.focus();
+      }
+      wasOpenRef.current = false;
+      return undefined;
+    }
+
+    wasOpenRef.current = true;
+    const focusableElements = getFocusableElements(modalRef.current);
+    focusableElements[0]?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (!open) return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const currentFocusableElements = getFocusableElements(modalRef.current);
+      if (currentFocusableElements.length === 0) {
+        event.preventDefault();
+        modalRef.current?.focus();
+        return;
+      }
+
+      const first = currentFocusableElements[0];
+      const last = currentFocusableElements[currentFocusableElements.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
 
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
         className="rounded-2xl bg-[#0052FF] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#0046DD] dark:hover:bg-[#0046DD]"
@@ -20,10 +81,23 @@ export function CreateEventButton() {
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-[24px] border border-zinc-200/80 bg-white p-7 shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:border-zinc-800 dark:bg-zinc-950">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-event-title"
+            tabIndex={-1}
+            className="w-full max-w-lg rounded-[24px] border border-zinc-200/80 bg-white p-7 shadow-[0_4px_24px_rgba(0,0,0,0.04)] dark:border-zinc-800 dark:bg-zinc-950"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="flex items-center justify-between">
-              <div className="text-base font-semibold">Create event</div>
+              <div id="create-event-title" className="text-base font-semibold">
+                Create event
+              </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
