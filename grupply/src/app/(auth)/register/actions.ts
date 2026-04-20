@@ -91,6 +91,38 @@ export async function registerAction(formData: FormData) {
 
   const adminStatus = getSupabaseAdminConfigStatus();
   const admin = createSupabaseAdminClient();
+  // #region agent log
+  try {
+    fetch("http://127.0.0.1:7840/ingest/071fdb3d-186d-4d94-bc25-a5093692a8a6", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "aeab4a" },
+      body: JSON.stringify({
+        sessionId: "aeab4a",
+        runId: "deploy-drift-check",
+        hypothesisId: "H1,H2,H3,H4",
+        location: "register/actions.ts:admin-status",
+        message: "admin config evaluated during registration",
+        data: {
+          requestId,
+          flow: values.flow,
+          adminStatusOk: adminStatus.ok,
+          adminStatusCode: adminStatus.code,
+          adminStatusRole: adminStatus.role,
+          adminStatusServiceRef: adminStatus.serviceRef,
+          adminStatusUrlRef: adminStatus.urlRef,
+          hasAdminClient: Boolean(admin),
+          hasServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+          serviceRoleKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length ?? 0,
+          nodeEnv: process.env.NODE_ENV ?? null,
+          vercelEnv: process.env.VERCEL_ENV ?? null,
+          vercel: process.env.VERCEL ?? null,
+          vercelUrl: process.env.VERCEL_URL ?? null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  } catch {}
+  // #endregion
   if (!admin) {
     logRegistrationEvent("error", "admin_config_invalid", {
       requestId,

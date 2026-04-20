@@ -147,6 +147,38 @@ export async function provisionRegistration({
     p_join_code: values.joinCode || null,
     p_organization_name: values.organizationName || null,
   };
+  // #region agent log
+  try {
+    fetch("http://127.0.0.1:7840/ingest/071fdb3d-186d-4d94-bc25-a5093692a8a6", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "aeab4a" },
+      body: JSON.stringify({
+        sessionId: "aeab4a",
+        runId: "provisioning-v2",
+        hypothesisId: "P1,P2,P4,P5",
+        location: "register-provisioning.ts:provisionRegistration:start",
+        message: "provision_registration rpc starting",
+        data: {
+          requestId,
+          flow: values.flow,
+          hasJoinCode: Boolean(values.joinCode),
+          hasOrganizationName: Boolean(values.organizationName),
+          hobbyCount: values.hobbyNames.length,
+          nodeEnv: process.env.NODE_ENV ?? null,
+          vercelEnv: process.env.VERCEL_ENV ?? null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  } catch {}
+  // #endregion
+  logRegistrationEvent("info", "provisioning_rpc_started", {
+    requestId,
+    flow: values.flow,
+    hasJoinCode: Boolean(values.joinCode),
+    hasOrganizationName: Boolean(values.organizationName),
+    hobbyCount: values.hobbyNames.length,
+  });
 
   const { data: organizationId, error: provisioningError } = await admin.rpc(
     "provision_registration",
@@ -158,6 +190,38 @@ export async function provisionRegistration({
       strategy: "rpc",
     };
   }
+  // #region agent log
+  try {
+    fetch("http://127.0.0.1:7840/ingest/071fdb3d-186d-4d94-bc25-a5093692a8a6", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "aeab4a" },
+      body: JSON.stringify({
+        sessionId: "aeab4a",
+        runId: "provisioning-v2",
+        hypothesisId: "P1,P2,P3,P5",
+        location: "register-provisioning.ts:provisionRegistration:rpcError",
+        message: "provision_registration rpc failed",
+        data: {
+          requestId,
+          flow: values.flow,
+          errorCode: provisioningError.code ?? null,
+          errorMessage: provisioningError.message,
+          isMissingFunction: isMissingProvisioningFunction(
+            provisioningError.code,
+            provisioningError.message,
+          ),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  } catch {}
+  // #endregion
+  logRegistrationEvent("error", "provisioning_rpc_failed", {
+    requestId,
+    flow: values.flow,
+    code: provisioningError.code ?? null,
+    message: provisioningError.message,
+  });
 
   if (!isMissingProvisioningFunction(provisioningError.code, provisioningError.message)) {
     throw provisioningError;
@@ -169,11 +233,45 @@ export async function provisionRegistration({
     flow: values.flow,
   });
 
-  const fallbackOrganizationId = await provisionRegistrationWithServerFallback({
-    admin,
-    userId,
-    values,
-  });
+  let fallbackOrganizationId: string;
+  try {
+    fallbackOrganizationId = await provisionRegistrationWithServerFallback({
+      admin,
+      userId,
+      values,
+    });
+  } catch (fallbackError) {
+    const typedFallbackError = fallbackError as { code?: string | null; message?: string };
+    // #region agent log
+    try {
+      fetch("http://127.0.0.1:7840/ingest/071fdb3d-186d-4d94-bc25-a5093692a8a6", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "aeab4a" },
+        body: JSON.stringify({
+          sessionId: "aeab4a",
+          runId: "provisioning-v2",
+          hypothesisId: "P2,P3",
+          location: "register-provisioning.ts:provisionRegistration:fallbackError",
+          message: "fallback provisioning failed",
+          data: {
+            requestId,
+            flow: values.flow,
+            errorCode: typedFallbackError.code ?? null,
+            errorMessage: typedFallbackError.message ?? "unknown",
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+    } catch {}
+    // #endregion
+    logRegistrationEvent("error", "provisioning_fallback_failed", {
+      requestId,
+      flow: values.flow,
+      code: typedFallbackError.code ?? null,
+      message: typedFallbackError.message ?? "unknown",
+    });
+    throw fallbackError;
+  }
 
   return {
     organizationId: fallbackOrganizationId,
