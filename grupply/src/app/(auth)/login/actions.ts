@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 
+import { registrationRecoveryPath } from "@/lib/auth/register";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function loginAction(formData: FormData) {
@@ -26,15 +27,17 @@ export async function loginAction(formData: FormData) {
       .eq("user_id", userId)
       .single();
 
-    if (profile?.organization_id) {
-      await supabase.from("audit_logs").insert({
-        organization_id: profile.organization_id,
-        user_id: userId,
-        action: "auth.login",
-        entity_type: "user",
-        entity_id: userId,
-      });
+    if (!profile?.organization_id) {
+      redirect(registrationRecoveryPath("join"));
     }
+
+    await supabase.from("audit_logs").insert({
+      organization_id: profile.organization_id,
+      user_id: userId,
+      action: "auth.login",
+      entity_type: "user",
+      entity_id: userId,
+    });
   }
 
   redirect("/dashboard");

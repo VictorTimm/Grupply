@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   const type = requestUrl.searchParams.get("type") as EmailOtpType | null;
   const next = sanitizeNextPath(requestUrl.searchParams.get("next"), type);
 
-  let response = NextResponse.redirect(new URL(next, requestUrl.origin));
+  const response = NextResponse.redirect(new URL(next, requestUrl.origin));
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {

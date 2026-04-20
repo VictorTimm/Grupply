@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { registrationRecoveryPath } from "@/lib/auth/register";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Avatar } from "@/components/Avatar";
 
@@ -39,7 +40,7 @@ export default async function DashboardPage() {
     .single();
 
   const organizationId = profile?.organization_id as string | undefined;
-  if (!organizationId) redirect("/register");
+  if (!organizationId) redirect(registrationRecoveryPath("join"));
 
   const nowIso = new Date().toISOString();
   const twoWeeksIso = new Date(

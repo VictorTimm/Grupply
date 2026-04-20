@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     p_query: q,
   });
 
-  let people =
+  const people =
     !peopleRpcError && peopleRpc?.length
       ? peopleRpc
       : await fallbackPeopleSearch(supabase, organizationId, q);
