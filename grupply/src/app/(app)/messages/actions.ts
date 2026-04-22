@@ -19,6 +19,30 @@ function friendlyError(raw: string): string {
   return "Could not start conversation. Please try again.";
 }
 
+async function debugLog(
+  hypothesisId: string,
+  location: string,
+  message: string,
+  data: Record<string, unknown>,
+) {
+  await fetch("http://127.0.0.1:7840/ingest/071fdb3d-186d-4d94-bc25-a5093692a8a6", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "054c30",
+    },
+    body: JSON.stringify({
+      sessionId: "054c30",
+      runId: "pre-fix-2",
+      hypothesisId,
+      location,
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+}
+
 export async function startConversationAction(formData: FormData) {
   const recipientId = String(formData.get("recipient_id") ?? "").trim();
   if (!recipientId) {
@@ -39,10 +63,36 @@ export async function startConversationAction(formData: FormData) {
   const organizationId = profile?.organization_id as string | undefined;
   if (!organizationId) redirect("/register");
 
+  // #region agent log
+  await debugLog(
+    "H1",
+    "src/app/(app)/messages/actions.ts:startConversationAction:entry",
+    "startConversationAction inputs resolved",
+    {
+      hasUserId: Boolean(userId),
+      hasOrganizationId: Boolean(organizationId),
+      recipientIdPrefix: recipientId.slice(0, 8),
+    },
+  );
+  // #endregion
+
   const { data: conversationId, error: convoError } = await supabase.rpc(
     "get_or_create_direct_conversation",
     { recipient_user_id: recipientId },
   );
+
+  // #region agent log
+  await debugLog(
+    "H2",
+    "src/app/(app)/messages/actions.ts:startConversationAction:rpcResult",
+    "get_or_create_direct_conversation result",
+    {
+      hasConversationId: Boolean(conversationId),
+      conversationIdPrefix: conversationId ? String(conversationId).slice(0, 8) : null,
+      rpcError: convoError?.message ?? null,
+    },
+  );
+  // #endregion
 
   if (convoError || !conversationId) {
     if (convoError) {
@@ -62,6 +112,12 @@ export async function startConversationAction(formData: FormData) {
   // secondary SELECT needed (and the full-conversation SELECT was causing RLS
   // errors due to the self-referential EXISTS policy on conversation_participants).
   const convId = String(conversationId);
+
+  console.error("[startConversationAction][prod-debug] conversation resolved", {
+    conversationIdPrefix: convId.slice(0, 8),
+    recipientIdPrefix: recipientId.slice(0, 8),
+    userIdPrefix: userId.slice(0, 8),
+  });
 
   await supabase.from("audit_logs").insert({
     organization_id: organizationId,

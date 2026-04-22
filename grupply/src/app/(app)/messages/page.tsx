@@ -4,6 +4,30 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import { StartConversationForm } from "./StartConversationForm";
 
+async function debugLog(
+  hypothesisId: string,
+  location: string,
+  message: string,
+  data: Record<string, unknown>,
+) {
+  await fetch("http://127.0.0.1:7840/ingest/071fdb3d-186d-4d94-bc25-a5093692a8a6", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "054c30",
+    },
+    body: JSON.stringify({
+      sessionId: "054c30",
+      runId: "pre-fix-2",
+      hypothesisId,
+      location,
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+}
+
 export default async function MessagesPage({
   searchParams,
 }: {
@@ -33,6 +57,19 @@ export default async function MessagesPage({
       "get_or_create_direct_conversation",
       { recipient_user_id: recipientId },
     );
+    // #region agent log
+    await debugLog(
+      "H3",
+      "src/app/(app)/messages/page.tsx:autoRecipientRpc",
+      "auto-recipient rpc result",
+      {
+        recipientIdPrefix: recipientId.slice(0, 8),
+        hasConversationId: Boolean(conversationId),
+        conversationIdPrefix: conversationId ? String(conversationId).slice(0, 8) : null,
+        rpcError: rpcError?.message ?? null,
+      },
+    );
+    // #endregion
     if (!rpcError && conversationId) {
       redirect(`/messages/${String(conversationId)}`);
     }

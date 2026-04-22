@@ -7,6 +7,30 @@ import { Avatar } from "@/components/Avatar";
 import { MessagesThread } from "./MessagesThread";
 import { SendMessageForm } from "./SendMessageForm";
 
+async function debugLog(
+  hypothesisId: string,
+  location: string,
+  message: string,
+  data: Record<string, unknown>,
+) {
+  await fetch("http://127.0.0.1:7840/ingest/071fdb3d-186d-4d94-bc25-a5093692a8a6", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "054c30",
+    },
+    body: JSON.stringify({
+      sessionId: "054c30",
+      runId: "pre-fix-2",
+      hypothesisId,
+      location,
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+}
+
 export default async function ConversationPage({
   params,
 }: {
@@ -23,9 +47,46 @@ export default async function ConversationPage({
     .select("user_id")
     .eq("conversation_id", id);
 
+  // #region agent log
+  await debugLog(
+    "H4",
+    "src/app/(app)/messages/[id]/page.tsx:participantsRead",
+    "participants read result",
+    {
+      conversationIdPrefix: id.slice(0, 8),
+      currentUserIdPrefix: userId.slice(0, 8),
+      participantsCount: participants?.length ?? 0,
+      participantPrefixes: (participants ?? []).map((p) => String(p.user_id).slice(0, 8)),
+      participantsError: participantsError?.message ?? null,
+    },
+  );
+  // #endregion
+
   const allowed = (participants ?? []).some((p) => p.user_id === userId);
 
+  // #region agent log
+  await debugLog(
+    "H5",
+    "src/app/(app)/messages/[id]/page.tsx:accessDecision",
+    "conversation access decision",
+    {
+      conversationIdPrefix: id.slice(0, 8),
+      currentUserIdPrefix: userId.slice(0, 8),
+      allowed,
+      participantsError: participantsError?.message ?? null,
+    },
+  );
+  // #endregion
+
   if (participantsError || !allowed) {
+    console.error("[ConversationPage][prod-debug] access denied", {
+      conversationIdPrefix: id.slice(0, 8),
+      currentUserIdPrefix: userId.slice(0, 8),
+      participantsCount: participants?.length ?? 0,
+      participantPrefixes: (participants ?? []).map((p) => String(p.user_id).slice(0, 8)),
+      participantsError: participantsError?.message ?? null,
+      allowed,
+    });
     redirect(
       "/messages?error=" +
         encodeURIComponent(
