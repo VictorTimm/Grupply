@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -39,18 +39,32 @@ export function MessagesThread({
   const [status, setStatus] = useState<"connected" | "reconnecting" | "error">(
     "connected",
   );
+  const [retryExhausted, setRetryExhausted] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Merge server-refreshed initialMessages into local state without losing
+  // optimistically-appended messages that may not yet be in the server snapshot.
+  useEffect(() => {
+    setMessages((prev) => {
+      const existingIds = new Set(prev.map((m) => m.id));
+      const incoming = initialMessages.filter((m) => !existingIds.has(m.id));
+      if (incoming.length === 0) return prev;
+      return [...prev, ...incoming].sort((a, b) =>
+        a.created_at.localeCompare(b.created_at),
+      );
+    });
+  }, [initialMessages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  useEffect(() => {
+  const subscribe = useCallback(() => {
     const supabase = createSupabaseBrowserClient();
     let retryCount = 0;
     const maxRetries = 5;
 
-    function subscribe() {
+    function connect() {
       const channel = supabase
         .channel(`messages-${conversationId}`)
         .on(
@@ -72,16 +86,23 @@ export function MessagesThread({
         .subscribe((st) => {
           if (st === "SUBSCRIBED") {
             setStatus("connected");
+            setRetryExhausted(false);
             retryCount = 0;
           } else if (st === "CHANNEL_ERROR") {
             setStatus("error");
             if (retryCount < maxRetries) {
               retryCount++;
-              const delay = Math.min(1000 * 2 ** retryCount, 30000);
+              const delay = Math.min(1000 * 2 ** retryCount, 30_000);
               setTimeout(() => {
                 void supabase.removeChannel(channel);
-                subscribe();
+                connect();
               }, delay);
+            } else {
+              console.error(
+                "[MessagesThread] Realtime channel failed after max retries",
+                { conversationId },
+              );
+              setRetryExhausted(true);
             }
           } else {
             setStatus("reconnecting");
@@ -91,12 +112,15 @@ export function MessagesThread({
       return channel;
     }
 
-    const channel = subscribe();
-
+    const channel = connect();
     return () => {
       void supabase.removeChannel(channel);
     };
   }, [conversationId]);
+
+  useEffect(() => {
+    return subscribe();
+  }, [subscribe]);
 
   const groups = useMemo(() => {
     const out: Array<{ day: string; items: MessageRow[] }> = [];
@@ -116,13 +140,26 @@ export function MessagesThread({
     <div className="flex flex-col gap-5">
       {status !== "connected" ? (
         <div
-          className={`self-center rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.14em] ${
+          className={`self-center flex items-center gap-2 rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.14em] ${
             status === "error"
               ? "bg-clay/10 text-clay"
               : "bg-ember-wash text-ember-deep"
           }`}
         >
-          {status === "error" ? "Connection lost. Retrying…" : "Reconnecting…"}
+          {status === "error"
+            ? retryExhausted
+              ? "Live updates unavailable."
+              : "Connection lost. Retrying…"
+            : "Reconnecting…"}
+          {retryExhausted ? (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="underline underline-offset-2"
+            >
+              Reload
+            </button>
+          ) : null}
         </div>
       ) : null}
 

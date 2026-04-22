@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import { buttonClass } from "@/components/ui";
 
@@ -11,6 +12,7 @@ export function SendMessageForm({
 }: {
   conversationId: string;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -27,6 +29,9 @@ export function SendMessageForm({
             setError(result.error);
           } else {
             formRef.current?.reset();
+            // Refresh the RSC tree so the sender's message is guaranteed to
+            // appear even when the realtime subscription hasn't fired yet.
+            router.refresh();
           }
         });
       }}

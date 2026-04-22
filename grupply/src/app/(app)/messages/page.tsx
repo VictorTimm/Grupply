@@ -7,7 +7,7 @@ import { StartConversationForm } from "./StartConversationForm";
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ error?: string }>;
+  searchParams?: Promise<{ error?: string; recipient?: string }>;
 }) {
   const resolvedParams = searchParams ? await searchParams : undefined;
 
@@ -24,6 +24,20 @@ export default async function MessagesPage({
 
   const organizationId = profile?.organization_id as string | undefined;
   if (!organizationId) redirect("/register");
+
+  // If a recipient is pre-selected (e.g. from a "Message" button on another page),
+  // auto-start or open the existing conversation immediately.
+  const recipientId = resolvedParams?.recipient?.trim();
+  if (recipientId && recipientId !== userId) {
+    const { data: conversationId, error: rpcError } = await supabase.rpc(
+      "get_or_create_direct_conversation",
+      { recipient_user_id: recipientId },
+    );
+    if (!rpcError && conversationId) {
+      redirect(`/messages/${String(conversationId)}`);
+    }
+    // Fall through to the normal page with an error if the RPC failed.
+  }
 
   const { data: people } = await supabase
     .from("profiles")

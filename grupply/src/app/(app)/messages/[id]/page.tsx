@@ -18,13 +18,14 @@ export default async function ConversationPage({
   const userId = auth.user?.id;
   if (!userId) redirect("/login");
 
-  const { data: participants } = await supabase
+  const { data: participants, error: participantsError } = await supabase
     .from("conversation_participants")
-    .select("user_id, profiles(user_id, first_name, last_name, avatar_url)")
+    .select("user_id")
     .eq("conversation_id", id);
 
   const allowed = (participants ?? []).some((p) => p.user_id === userId);
-  if (!allowed) {
+
+  if (participantsError || !allowed) {
     redirect(
       "/messages?error=" +
         encodeURIComponent(
@@ -36,21 +37,14 @@ export default async function ConversationPage({
   const otherParticipant = (participants ?? []).find(
     (p) => p.user_id !== userId,
   );
-  const raw = otherParticipant?.profiles as unknown as
-    | {
-        user_id: string;
-        first_name: string;
-        last_name: string;
-        avatar_url: string | null;
-      }
-    | {
-        user_id: string;
-        first_name: string;
-        last_name: string;
-        avatar_url: string | null;
-      }[]
-    | null;
-  const partnerProfile = Array.isArray(raw) ? raw[0] : raw;
+  const otherParticipantId = otherParticipant?.user_id as string | undefined;
+  const { data: partnerProfile } = otherParticipantId
+    ? await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, avatar_url")
+        .eq("user_id", otherParticipantId)
+        .single()
+    : { data: null };
   const partnerName = partnerProfile
     ? `${partnerProfile.first_name} ${partnerProfile.last_name}`
     : "Conversation";

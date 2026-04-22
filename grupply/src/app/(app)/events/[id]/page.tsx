@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Avatar } from "@/components/Avatar";
-import { joinEventAction, leaveEventAction } from "@/app/(app)/dashboard/actions";
+import { leaveEventAction } from "@/app/(app)/dashboard/actions";
 import { ConfirmActionForm } from "@/components/ConfirmActionForm";
+import { JoinEventButton } from "@/components/JoinEventButton";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Chip, buttonClass } from "@/components/ui";
 
@@ -187,19 +188,7 @@ export default async function EventDetailPage({
                 </SubmitButton>
               </form>
             ) : !isFull ? (
-              <form
-                action={async () => {
-                  "use server";
-                  await joinEventAction(id);
-                }}
-              >
-                <SubmitButton
-                  pendingLabel={"Joining\u2026"}
-                  className={buttonClass({ variant: "primary", size: "lg" })}
-                >
-                  I&rsquo;m in
-                </SubmitButton>
-              </form>
+              <JoinEventButton eventId={id} variant="primary" size="lg" />
             ) : (
               <span className={buttonClass({ variant: "quiet", size: "lg" })}>
                 Event is full

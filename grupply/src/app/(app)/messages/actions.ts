@@ -45,40 +45,23 @@ export async function startConversationAction(formData: FormData) {
   );
 
   if (convoError || !conversationId) {
+    if (convoError) {
+      console.error("[startConversationAction] RPC error:", convoError.message, {
+        recipientId,
+        userId,
+      });
+    }
     const msg = convoError
       ? friendlyError(convoError.message)
       : "Could not create conversation. Please try again.";
     redirect("/messages?error=" + encodeURIComponent(msg));
   }
 
+  // The SECURITY DEFINER RPC already atomically creates both participant rows
+  // and validates org membership. Trusting its return value is safe — no
+  // secondary SELECT needed (and the full-conversation SELECT was causing RLS
+  // errors due to the self-referential EXISTS policy on conversation_participants).
   const convId = String(conversationId);
-  const { data: participantRows, error: participantsError } = await supabase
-    .from("conversation_participants")
-    .select("user_id")
-    .eq("conversation_id", convId);
-
-  if (participantsError) {
-    redirect(
-      "/messages?error=" +
-        encodeURIComponent(
-          "Could not verify conversation participants. Please try again.",
-        ),
-    );
-  }
-
-  const participantIds = new Set(
-    (participantRows ?? []).map((r) => r.user_id as string),
-  );
-  const hasBoth =
-    participantIds.has(userId) && participantIds.has(recipientId);
-  if (!hasBoth || participantIds.size < 2) {
-    redirect(
-      "/messages?error=" +
-        encodeURIComponent(
-          "Conversation was created but you were not added as a participant. Re-run the messaging SQL migration (get_or_create_direct_conversation) in Supabase, or contact support.",
-        ),
-    );
-  }
 
   await supabase.from("audit_logs").insert({
     organization_id: organizationId,
@@ -132,6 +115,11 @@ export async function sendMessageAction(
   });
 
   if (insertError) {
+    console.error("[sendMessageAction] Insert error:", insertError.message, {
+      conversationId,
+      userId,
+      code: insertError.code,
+    });
     return { ok: false, error: "Failed to send message. Please try again." };
   }
 
@@ -143,6 +131,9 @@ export async function sendMessageAction(
     entity_id: conversationId,
   });
 
+  // Revalidate both the conversation thread and the layout-level inbox list
+  // so that last-message previews and ordering update immediately for the sender.
   revalidatePath(`/messages/${conversationId}`);
+  revalidatePath("/messages", "layout");
   return { ok: true };
 }

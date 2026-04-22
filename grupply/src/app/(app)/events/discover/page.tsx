@@ -2,8 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { joinEventAction } from "@/app/(app)/dashboard/actions";
-import { SubmitButton } from "@/components/SubmitButton";
+import { JoinEventButton } from "@/components/JoinEventButton";
 import {
   AvatarStack,
   Chip,
@@ -308,14 +307,7 @@ function FeaturedEvent({
             ) : null}
           </div>
           {!isJoined && !full ? (
-            <form action={async () => { "use server"; await joinEventAction(event.id); }}>
-              <SubmitButton
-                pendingLabel="Joining…"
-                className={buttonClass({ variant: "primary", size: "lg", full: true })}
-              >
-                I&rsquo;m in
-              </SubmitButton>
-            </form>
+            <JoinEventButton eventId={event.id} variant="primary" size="lg" />
           ) : (
             <Link
               href={`/events/${event.id}`}
@@ -403,14 +395,7 @@ function CompactRow({
       ) : null}
 
       {!isJoined && !isCanceled && !isPast && !full ? (
-        <form action={async () => { "use server"; await joinEventAction(e.id); }}>
-          <SubmitButton
-            pendingLabel="…"
-            className={buttonClass({ variant: "secondary", size: "sm" })}
-          >
-            Join
-          </SubmitButton>
-        </form>
+        <JoinEventButton eventId={e.id} variant="secondary" size="sm" label="Join" pendingLabel="…" />
       ) : (
         <Link
           href={`/events/${e.id}`}

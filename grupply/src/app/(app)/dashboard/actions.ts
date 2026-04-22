@@ -4,24 +4,84 @@ import { revalidatePath } from "next/cache";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function joinEventAction(eventId: string) {
+export async function joinEventAction(eventId: string): Promise<{ ok: true } | { ok: false; message: string }> {
   const supabase = await createSupabaseServerClient();
   const { data: auth } = await supabase.auth.getUser();
   const userId = auth.user?.id;
-  if (!userId) return;
+  if (!userId) return { ok: false, message: "Not authenticated." };
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("organization_id")
     .eq("user_id", userId)
     .single();
-  if (profileError) return;
+  if (profileError) return { ok: false, message: "Could not load your profile." };
 
   const { error } = await supabase.rpc("join_event_with_capacity", {
     target_event_id: eventId,
   });
 
-  if (error) return;
+  if (error) {
+    const msg = error.message ?? "";
+    const isKnownRpcLockBug =
+      error.code === "0A000" &&
+      /FOR SHARE is not allowed with aggregate functions/i.test(msg);
+
+    if (isKnownRpcLockBug) {
+      const { data: eventRow, error: eventRowError } = await supabase
+        .from("events")
+        .select("id, organization_id, status, capacity")
+        .eq("id", eventId)
+        .single();
+
+      if (eventRowError || !eventRow) {
+        return { ok: false, message: "Could not join event. Please try again." };
+      }
+      if (eventRow.organization_id !== profile.organization_id) {
+        return { ok: false, message: "This event is not in your organization." };
+      }
+      if (eventRow.status !== "active") {
+        return { ok: false, message: "This event is no longer active." };
+      }
+
+      const { data: existing } = await supabase
+        .from("event_attendees")
+        .select("event_id")
+        .eq("event_id", eventId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!existing) {
+        const { count: attendeeCount, error: countError } = await supabase
+          .from("event_attendees")
+          .select("*", { count: "exact", head: true })
+          .eq("event_id", eventId);
+        if (countError) {
+          return { ok: false, message: "Could not join event. Please try again." };
+        }
+        if ((attendeeCount ?? 0) >= eventRow.capacity) {
+          return { ok: false, message: "This event is full." };
+        }
+
+        const { error: insertError } = await supabase.from("event_attendees").insert({
+          organization_id: profile.organization_id,
+          event_id: eventId,
+          user_id: userId,
+        });
+
+        if (insertError && insertError.code !== "23505") {
+          return { ok: false, message: "Could not join event. Please try again." };
+        }
+      }
+    } else {
+    if (/event_capacity_reached/.test(msg)) return { ok: false, message: "This event is full." };
+    if (/event_not_active/.test(msg)) return { ok: false, message: "This event is no longer active." };
+    if (/cross_org_forbidden/.test(msg)) return { ok: false, message: "This event is not in your organization." };
+    if (/profile_missing/.test(msg)) return { ok: false, message: "Your profile is incomplete." };
+    if (/not_org_member/.test(msg)) return { ok: false, message: "You are not a member of this organization." };
+    return { ok: false, message: "Could not join event. Please try again." };
+    }
+  }
 
   await supabase.from("audit_logs").insert({
     organization_id: profile.organization_id,
@@ -35,7 +95,7 @@ export async function joinEventAction(eventId: string) {
   revalidatePath("/events/joined");
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/events/discover");
-  return;
+  return { ok: true };
 }
 
 export async function leaveEventAction(eventId: string) {

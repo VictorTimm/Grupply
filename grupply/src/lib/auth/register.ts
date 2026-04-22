@@ -77,12 +77,30 @@ export function mapSignUpErrorMessage(message: string) {
   return message;
 }
 
+export function mapAdminRuntimeError(error: SupabaseLikeError) {
+  const message = error.message ?? "";
+  const lower = message.toLowerCase();
+  const code = error.code ?? "";
+
+  if (
+    /invalid api key/.test(lower) ||
+    /jwt/.test(lower) ||
+    /invalid signature/.test(lower) ||
+    /invalid token/.test(lower) ||
+    /unauthorized/.test(lower) ||
+    /forbidden/.test(lower) ||
+    code === "401"
+  ) {
+    return "Server admin connection to Supabase is invalid. Verify SUPABASE_SERVICE_ROLE_KEY in Vercel (no quotes/spaces, correct project, correct environment) and redeploy.";
+  }
+
+  return "Server admin connection check failed before registration. Verify Supabase admin env values and try again.";
+}
+
 export function mapProvisioningError(error: SupabaseLikeError) {
   const message = error.message ?? "";
   const lower = message.toLowerCase();
   const code = error.code ?? "";
-  const debugCode = code || "none";
-  const debugMessage = message.replace(/\s+/g, " ").trim().slice(0, 120) || "none";
 
   if (
     code === "PGRST202" ||
@@ -115,7 +133,7 @@ export function mapProvisioningError(error: SupabaseLikeError) {
     return "Signup could not finish because the server admin connection to Supabase is invalid. Re-check SUPABASE_SERVICE_ROLE_KEY and restart the dev server.";
   }
 
-  return `We created the auth user, but could not finish organization setup. Debug code: ${debugCode}. Debug message: ${debugMessage}.`;
+  return "We created the auth user, but could not finish organization setup. Check the server logs for the failing provisioning step, then either recover or delete the partial user before retrying.";
 }
 
 export function registrationRecoveryPath(flow: RegisterFlowMode) {

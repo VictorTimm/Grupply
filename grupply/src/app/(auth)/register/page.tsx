@@ -12,28 +12,6 @@ export default async function RegisterPage({
 }) {
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const isCreateFlow = resolvedSearchParams?.flow === "new";
-  // #region agent log
-  try {
-    fetch("http://127.0.0.1:7840/ingest/071fdb3d-186d-4d94-bc25-a5093692a8a6", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "aeab4a" },
-      body: JSON.stringify({
-        sessionId: "aeab4a",
-        runId: "deploy-drift-check",
-        hypothesisId: "H5",
-        location: "register/page.tsx:render",
-        message: "register page rendered",
-        data: {
-          hasErrorParam: Boolean(resolvedSearchParams?.error),
-          flowParam: resolvedSearchParams?.flow ?? null,
-          nodeEnv: process.env.NODE_ENV ?? null,
-          vercelEnv: process.env.VERCEL_ENV ?? null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  } catch {}
-  // #endregion
 
   return (
     <div className="flex flex-col gap-8">

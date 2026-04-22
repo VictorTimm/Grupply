@@ -36,8 +36,27 @@ function extractProjectRef(url: string) {
   }
 }
 
+function normalizeEnvToken(value: string | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    const unquoted = trimmed.slice(1, -1).trim();
+    return unquoted || null;
+  }
+
+  return trimmed;
+}
+
+export function getSupabaseServiceRoleKey() {
+  return normalizeEnvToken(process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 export function getSupabaseAdminConfigStatus(): SupabaseAdminConfigStatus {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = getSupabaseServiceRoleKey();
   if (!serviceRoleKey) {
     return {
       ok: false,

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { registrationRecoveryPath } from "@/lib/auth/register";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Avatar } from "@/components/Avatar";
+import { JoinEventButton } from "@/components/JoinEventButton";
 import { SubmitButton } from "@/components/SubmitButton";
 import {
   AvatarStack,
@@ -11,7 +12,7 @@ import {
   buttonClass,
 } from "@/components/ui";
 
-import { joinEventAction, leaveEventAction } from "./actions";
+import { leaveEventAction } from "./actions";
 import { NotificationsPanel } from "./NotificationsPanel";
 
 type EventRow = {
@@ -318,22 +319,13 @@ export default async function DashboardPage() {
                         </div>
                       </div>
                       {!full ? (
-                        <form
-                          action={async () => {
-                            "use server";
-                            await joinEventAction(e.id);
-                          }}
-                        >
-                          <SubmitButton
-                            pendingLabel="Joining…"
-                            className={buttonClass({
-                              variant: isFirst ? "primary" : "secondary",
-                              size: isFirst ? "md" : "sm",
-                            })}
-                          >
-                            Join
-                          </SubmitButton>
-                        </form>
+                        <JoinEventButton
+                          eventId={e.id}
+                          variant={isFirst ? "primary" : "secondary"}
+                          size={isFirst ? "md" : "sm"}
+                          label="Join"
+                          pendingLabel="Joining…"
+                        />
                       ) : null}
                     </div>
                   </li>
@@ -367,27 +359,34 @@ export default async function DashboardPage() {
         ) : (
           <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-2 md:-mx-0 md:px-0">
             {(matches as MatchRow[]).slice(0, 8).map((m) => (
-              <Link
+              <div
                 key={m.user_id}
-                href={`/people/${m.user_id}`}
                 className="group flex w-[220px] shrink-0 flex-col gap-3 border border-border bg-surface p-4 transition-[border-color,transform] hover:border-ink hover:-translate-y-[1px] rounded-[12px]"
               >
-                <Avatar
-                  src={m.avatar_url}
-                  initials={initialsOf(m.first_name, m.last_name)}
-                  size="lg"
-                  shape="squircle"
-                />
-                <div>
-                  <div className="text-[14px] font-medium text-ink">
-                    {m.first_name} {m.last_name}
+                <Link href={`/people/${m.user_id}`} className="flex flex-col gap-3">
+                  <Avatar
+                    src={m.avatar_url}
+                    initials={initialsOf(m.first_name, m.last_name)}
+                    size="lg"
+                    shape="squircle"
+                  />
+                  <div>
+                    <div className="text-[14px] font-medium text-ink">
+                      {m.first_name} {m.last_name}
+                    </div>
+                    <div className="text-[12px] text-sage mt-0.5">
+                      {m.shared_interests} shared interest
+                      {m.shared_interests !== 1 ? "s" : ""}
+                    </div>
                   </div>
-                  <div className="text-[12px] text-sage mt-0.5">
-                    {m.shared_interests} shared interest
-                    {m.shared_interests !== 1 ? "s" : ""}
-                  </div>
-                </div>
-              </Link>
+                </Link>
+                <Link
+                  href={`/messages?recipient=${m.user_id}`}
+                  className="mt-auto text-[11px] uppercase tracking-[0.12em] text-muted hover:text-ember-deep transition-colors"
+                >
+                  Message &rarr;
+                </Link>
+              </div>
             ))}
           </div>
         )}

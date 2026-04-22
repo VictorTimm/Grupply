@@ -10,6 +10,7 @@ import {
   respondConnectionAction,
   sendConnectionAction,
 } from "./actions";
+import { startConversationAction } from "@/app/(app)/messages/actions";
 
 export default async function PersonProfilePage({
   params,
@@ -32,6 +33,12 @@ export default async function PersonProfilePage({
     .single();
 
   if (!person) redirect("/people/find");
+
+  const { data: myProfile } = await supabase
+    .from("profiles")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .single();
 
   const { data: hobbies } = await supabase
     .from("user_hobbies")
@@ -71,6 +78,10 @@ export default async function PersonProfilePage({
   const conn = connections?.[0] ?? null;
   const isRequester = conn?.requester_id === userId;
   const isSelf = userId === targetUserId;
+  const sameOrg =
+    !isSelf &&
+    !!myProfile?.organization_id &&
+    myProfile.organization_id === (person.organization_id as string | null);
 
   const { data: sharedEvents } = await supabase
     .from("event_attendees")
@@ -160,6 +171,20 @@ export default async function PersonProfilePage({
           role="alert"
         >
           {resolvedSearchParams.error}
+        </div>
+      ) : null}
+
+      {sameOrg ? (
+        <div className="flex justify-end">
+          <form action={startConversationAction}>
+            <input type="hidden" name="recipient_id" value={targetUserId} />
+            <SubmitButton
+              pendingLabel="Opening…"
+              className={buttonClass({ variant: "secondary", size: "md" })}
+            >
+              Message
+            </SubmitButton>
+          </form>
         </div>
       ) : null}
 
